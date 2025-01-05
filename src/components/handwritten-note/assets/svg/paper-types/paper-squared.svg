@@ -1,0 +1,19 @@
+<!-- paper-squared.svg -->
+<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Нарисуем квадрат со светло-серой обводкой -->
+  <rect
+    x="0.5"
+    y="0.5"
+    width="19"
+    height="19"
+    stroke="#ccc"
+    stroke-width="1"
+    fill="none"
+  />
+</svg>
