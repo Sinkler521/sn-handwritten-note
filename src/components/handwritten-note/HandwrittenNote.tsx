@@ -1,4 +1,11 @@
-import React, { useState, MouseEvent, useRef, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  MouseEvent,
+  useRef,
+  useEffect,
+  useCallback,
+  CSSProperties,
+} from 'react';
 import ReactDOM from 'react-dom';
 import { HandwrittenNoteType, getNoteClass } from './HandwrittenNoteTypes';
 import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
@@ -29,8 +36,9 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(
     null
   );
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
-  const topPanelRef = useRef<HTMLDivElement | null>(null);
   const windowRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -53,12 +61,12 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
 
   const handleMouseMove = useCallback(
     (e: MouseEvent | globalThis.MouseEvent) => {
-      if (!isGrabbing || isFullScreen) return;
+      if (!isGrabbing || isFullScreen || isMinimized) return;
       const newX = e.clientX - mouseOffset.x;
       const newY = e.clientY - mouseOffset.y;
       setWindowCoordinates({ x: newX, y: newY });
     },
-    [isGrabbing, mouseOffset, isFullScreen]
+    [isGrabbing, mouseOffset, isFullScreen, isMinimized]
   );
 
   useEffect(() => {
@@ -82,23 +90,32 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     });
   };
 
+  const handleMinimize = () => {
+    setBackToFullScreen(isFullScreen);
+    setIsFullScreen(false);
+    if (!isFullScreen) setSavedCoordinates(windowCoordinates);
+    setIsMinimized(true);
+  };
+
+  const handleRestore = () => {
+    setIsMinimized(false);
+    if (backToFullScreen) {
+      setIsFullScreen(true);
+    } else {
+      setIsFullScreen(false);
+      if (savedCoordinates) setWindowCoordinates(savedCoordinates);
+    }
+  };
+
   if (!isOpened) return null;
-
-  const handleOverlayClick = () => {
-    onClose();
-  };
-
-  const handleContainerClick = (e: MouseEvent) => {
-    e.stopPropagation();
-  };
 
   if (step === 1) {
     return ReactDOM.createPortal(
       <div
         className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-        onClick={handleOverlayClick}
+        onClick={onClose}
       >
-        <div className="bg-white p-6 rounded shadow w-80" onClick={handleContainerClick}>
+        <div className="bg-white p-6 rounded shadow w-80" onClick={(e) => e.stopPropagation()}>
           <h2 className="text-xl font-bold mb-4">Select Template</h2>
           <select
             className="border p-2 w-full mb-4"
@@ -109,10 +126,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
             <option value={HandwrittenNoteType.RULED}>Ruled</option>
           </select>
           <div className="flex justify-end space-x-2">
-            <button
-              className="px-4 py-2 bg-gray-300 rounded"
-              onClick={() => onClose()}
-            >
+            <button className="px-4 py-2 bg-gray-300 rounded" onClick={onClose}>
               Cancel
             </button>
             <button
@@ -128,70 +142,111 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
-  return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50"
-      onClick={handleOverlayClick}
+  const heightNormal = '90vh';
+  const widthNormal = `calc(90vh * (210 / 297))`;
+
+  let left: number | string = windowCoordinates.x;
+  let top: number | string = windowCoordinates.y;
+  let width: number | string = widthNormal;
+  let height: number | string = heightNormal;
+
+  if (isFullScreen) {
+    left = 0;
+    top = 0;
+    width = '100vw';
+    height = '100vh';
+  } else if (isMinimized) {
+    left = 'calc(100vw - 60px)';
+    top = 'calc(100vh - 60px)';
+    width = '40px';
+    height = '40px';
+  }
+
+  const containerStyle: CSSProperties = {
+    left,
+    top,
+    width,
+    height,
+  };
+
+  const minimizedButton = (
+    <button
+      style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: '30px',
+        height: '30px',
+        transform: 'translate(-50%, -50%)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '4px',
+        background: '#ccc',
+      }}
+      onClick={handleRestore}
     >
+      <MdMinimize size={16} />
+    </button>
+  );
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={onClose}>
       <div
         ref={windowRef}
+        style={containerStyle}
         className={`
-          handwritten-note-window
-          bg-white
+          absolute
           overflow-hidden
           rounded
+          bg-white
           ${backgroundClass}
           ${isGrabbing ? '' : 'transition-all'}
-          ${isFullScreen ? 'w-screen h-screen' : 'w-[60vh] max-h-[90vh] aspect-[210/297]'}
-          absolute
         `}
-        style={{
-          left: isFullScreen ? 0 : windowCoordinates.x,
-          top: isFullScreen ? 0 : windowCoordinates.y,
-        }}
-        onClick={handleContainerClick}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        <div
-          ref={topPanelRef}
-          className="
-            handwritten-opened-upper-panel
-            w-full px-2 flex justify-end items-center
-            bg-white
-            cursor-grab
-            active:cursor-grabbing
-            border-b
-          "
-          onMouseDown={(e) => {
-            if (isFullScreen) return;
-            setIsGrabbing(true);
-            const offsetX = e.clientX - windowCoordinates.x;
-            const offsetY = e.clientY - windowCoordinates.y;
-            setMouseOffset({ x: offsetX, y: offsetY });
-          }}
-        >
-          <button
-            className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
-          >
-            <MdMinimize size={24} />
-          </button>
-          <button
-            className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
-            onClick={toggleIsFullScreen}
-          >
-            <MdOutlineFullscreen size={24} />
-          </button>
-          <button
-            className="border-l p-1 bg-red-300 transition-all hover:scale-95 hover:bg-red-400 cursor-pointer"
-            onClick={onClose}
-          >
-            <MdClose size={24} />
-          </button>
-        </div>
-
-        <HandwrittenNoteEditor 
-          onChange={() => {}}
-          canvasRef={undefined}
-        />
+        {isMinimized ? (
+          minimizedButton
+        ) : (
+          <>
+            <div
+              className="
+                w-full px-2 flex justify-end items-center
+                bg-white border-b
+                cursor-grab active:cursor-grabbing
+              "
+              onMouseDown={(e) => {
+                if (isFullScreen || isMinimized) return;
+                setIsGrabbing(true);
+                const offsetX = e.clientX - windowCoordinates.x;
+                const offsetY = e.clientY - windowCoordinates.y;
+                setMouseOffset({ x: offsetX, y: offsetY });
+              }}
+            >
+              <button
+                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+                onClick={handleMinimize}
+              >
+                <MdMinimize size={24} />
+              </button>
+              <button
+                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+                onClick={toggleIsFullScreen}
+              >
+                <MdOutlineFullscreen size={24} />
+              </button>
+              <button
+                className="border-l p-1 bg-red-300 transition-all hover:scale-95 hover:bg-red-400 cursor-pointer"
+                onClick={onClose}
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
+            <HandwrittenNoteEditor onChange={() => {}} canvasRef={undefined} />
+          </>
+        )}
       </div>
     </div>,
     document.body
