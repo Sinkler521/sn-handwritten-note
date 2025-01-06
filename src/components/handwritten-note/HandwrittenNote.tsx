@@ -1,8 +1,9 @@
-import React, { useState, MouseEvent } from 'react';
+import React, { useState, MouseEvent, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { HandwrittenNoteType } from './HandwrittenNoteTypes';
+import { HandwrittenNoteType, getNoteClass} from './HandwrittenNoteTypes';
 import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
-import "./handwritten-note-styles.css";
+import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
+import './handwritten-note-styles.css';
 
 type HandwrittenNoteProps = {
   isOpened: boolean;
@@ -17,6 +18,73 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [noteType, setNoteType] = useState<HandwrittenNoteType>(
     HandwrittenNoteType.SQUARED
   );
+  const [backgroundClass, setBackgroundClass] = useState('');
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+
+  const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
+
+  const [windowCoordinates, setWindowCoordinates] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+
+  const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+
+  const topPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const windowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const initialX = (window.innerWidth - 600) / 2; 
+    const initialY = window.innerHeight * 0.2;      
+    setWindowCoordinates({ x: initialX, y: initialY });
+  }, []);
+
+  useEffect(() => {
+    if (isFullScreen) {
+      setWindowCoordinates({ x: 0, y: 0 });
+      setIsGrabbing(false);
+    }
+  }, [isFullScreen]);
+
+  useEffect(() => {
+    if(noteType) setBackgroundClass(getNoteClass(noteType))
+  }, [noteType])
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent | globalThis.MouseEvent) => {
+      if (!isGrabbing || isFullScreen) return;
+
+      const newX = e.clientX - mouseOffset.x;
+      const newY = e.clientY - mouseOffset.y;
+
+      setWindowCoordinates({ x: newX, y: newY });
+    },
+    [isGrabbing, mouseOffset, isFullScreen]
+  );
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      setIsGrabbing(false);
+    };
+
+    if (isGrabbing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isGrabbing, handleMouseMove]);
+
+  const toggleIsFullScreen = () => {
+    setIsFullScreen((prev) => !prev);
+  };
 
   if (!isOpened) return null;
 
@@ -64,38 +132,70 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
-  const backgroundClass =
-    noteType === HandwrittenNoteType.SQUARED
-      ? 'paper-squared'
-      : 'paper-ruled';
-
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 z-50"
       onClick={handleOverlayClick}
     >
       <div
+        ref={windowRef}
         className={`
-          relative 
-          w-3/4 max-w-3xl 
-          aspect-[210/297] 
-          overflow-hidden 
-          bg-white 
+          handwritten-note-window
+          bg-white
+          overflow-hidden
+          rounded
           ${backgroundClass}
+          ${isGrabbing ? null : 'transition-all'}
+          ${isFullScreen ? 'w-screen h-screen' : 'w-[60vh] max-h-[90vh] aspect-[210/297]'}
+          absolute
         `}
+        style={{
+          left: isFullScreen ? 0 : windowCoordinates.x,
+          top: isFullScreen ? 0 : windowCoordinates.y,
+        }}
         onClick={handleContainerClick}
       >
-        <button
-          className="absolute top-2 right-2 bg-gray-300 px-3 py-1 rounded"
-          onClick={() => onClose()}
+        <div
+          ref={topPanelRef}
+          className="
+            handwritten-opened-upper-panel
+            w-full px-2 flex justify-end items-center
+            bg-white
+            cursor-grab
+            active:cursor-grabbing
+            border-b
+          "
+          onMouseDown={(e) => {
+            if (isFullScreen) return;
+            setIsGrabbing(true);
+            const offsetX = e.clientX - windowCoordinates.x;
+            const offsetY = e.clientY - windowCoordinates.y;
+            setMouseOffset({ x: offsetX, y: offsetY });
+          }}
         >
-          Close
-        </button>
+          <button
+            className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+          >
+            <MdMinimize size={24} />
+          </button>
+          <button
+            className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+            onClick={toggleIsFullScreen}
+          >
+            <MdOutlineFullscreen size={24} />
+          </button>
+          <button
+            className="border-l p-1 bg-red-300 transition-all hover:scale-95 hover:bg-red-400 cursor-pointer"
+            onClick={onClose}
+          >
+            <MdClose size={24} />
+          </button>
+        </div>
+
         <HandwrittenNoteEditor 
           onChange={() => {}}
-          canvasRef={undefined}        
+          canvasRef={undefined}
         />
-    
       </div>
     </div>,
     document.body
