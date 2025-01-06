@@ -157,7 +157,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     height = '100vh';
   } else if (isMinimized) {
     left = 'calc(100vw - 60px)';
-    top = 'calc(100vh - 60px)';
+    top = 'calc(100vh - 180px)';
     width = '40px';
     height = '40px';
   }
