@@ -1,7 +1,8 @@
 import React, { useState, MouseEvent } from 'react';
 import ReactDOM from 'react-dom';
 import { HandwrittenNoteType } from './HandwrittenNoteTypes';
-import "./handwritten-note-styles.css"
+import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
+import "./handwritten-note-styles.css";
 
 type HandwrittenNoteProps = {
   isOpened: boolean;
@@ -90,7 +91,11 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
         >
           Close
         </button>
-        {/* CONTENT HERE (CANVAS) */}
+        <HandwrittenNoteEditor 
+          onChange={() => {}}
+          canvasRef={undefined}        
+        />
+    
       </div>
     </div>,
     document.body
