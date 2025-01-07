@@ -13,3 +13,8 @@ export const getNoteClass = (noteType: HandwrittenNoteType): string => {
         return 'paper-squared';
     }
   };
+
+  export const allNoteTypes = [
+    HandwrittenNoteType.SQUARED,
+    HandwrittenNoteType.RULED
+  ]
