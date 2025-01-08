@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { HandwrittenNoteType } from "./HandwrittenNoteTypes";
 import { toast } from 'sonner';
@@ -32,40 +32,38 @@ export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypePr
     >
       <div
         className="
+          relative
           w-[55vw] h-[80vh]
           bg-white rounded shadow
-          overflow-hidden
+          p-4
           grid grid-cols-[1fr_4fr]
           gap-4
-          p-4
-          relative
         "
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Левая колонка */}
-        <div className="overflow-y-auto h-full shadow p-4 rounded">
+        <div className="relative flex flex-col h-full rounded shadow overflow-hidden">
           <h2 className="text-xl font-bold mb-4">Available Note Types</h2>
-          <ul className="space-y-2">
-            {props.allNoteTypes.map((type) => (
-              <li
-                key={type}
-                onClick={() => handleSelectType(type)}
-                className={`
-                  p-2 rounded cursor-pointer
-                  transition-all hover:bg-gray-50
-                  ${props.noteType === type ? 'bg-gray-100 font-semibold' : ''}
-                `}
-              >
-                {type}
-              </li>
-            ))}
-          </ul>
+          <div className="flex-1 overflow-y-auto pr-2">
+            <ul className="space-y-2">
+              {props.allNoteTypes.map((type) => (
+                <li
+                  key={type}
+                  onClick={() => handleSelectType(type)}
+                  className={`
+                    p-2 rounded cursor-pointer
+                    transition-all hover:bg-gray-50
+                    ${props.noteType === type ? 'bg-gray-100 font-semibold' : ''}
+                  `}
+                >
+                  {type}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        {/* Правая колонка */}
-        <div className="relative flex flex-col h-full shadow rounded">
-          {/* Прокрутка контента (сетка) */}
-          <div className="overflow-y-auto flex-1 p-2 pb-20">
+        <div className="relative flex flex-col h-full rounded shadow overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-2 pb-20">
             <div className="grid grid-cols-3 gap-4">
               {props.allNoteTypes.map((type) => {
                 const previewClass = props.getNoteClass(type);
@@ -94,10 +92,10 @@ export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypePr
             </div>
           </div>
 
-          {/* Нижняя панель - фиксируем снизу правой колонки */}
           <div
             className="
-              absolute bottom-0 left-0 w-full
+              absolute
+              bottom-0 left-0 w-full
               border-t bg-white
               py-3 px-2
               flex justify-evenly items-center
