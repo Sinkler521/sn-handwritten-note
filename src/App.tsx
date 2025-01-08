@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HandwrittenNote } from './components/handwritten-note/HandwrittenNote';
+import { Toaster, toast } from 'sonner'
 import './styles.css';
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
 
   return (
     <div className="container w-full min-h-screen flex flex-col bg-gray-100">
+      <Toaster position="top-right" />
       <div className="button-container px-4 py-5 border-b border-gray-300 flex justify-end">
         <button
           onClick={() => setShowNote(true)}
@@ -45,10 +47,10 @@ function App() {
       </div>
 
       {showNote && (
-        <HandwrittenNote
-          isOpened={showNote}
-          onClose={() => setShowNote(false)}
-        />
+          <HandwrittenNote
+            isOpened={showNote}
+            onClose={() => setShowNote(false)}
+          />
       )}
     </div>
   );

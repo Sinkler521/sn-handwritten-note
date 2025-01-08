@@ -16,5 +16,20 @@ export const getNoteClass = (noteType: HandwrittenNoteType): string => {
 
   export const allNoteTypes = [
     HandwrittenNoteType.SQUARED,
-    HandwrittenNoteType.RULED
+    HandwrittenNoteType.RULED,
+
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED,
+    // HandwrittenNoteType.SQUARED,
+    // HandwrittenNoteType.RULED
   ]

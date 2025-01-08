@@ -13,6 +13,7 @@ import {
   allNoteTypes,
 } from './HandwrittenNoteTypes';
 import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
+import { HandwrittenStepChooseNoteType } from "./Handwritten-step-1"
 import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
 import './handwritten-note-styles.css';
 
@@ -26,9 +27,10 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   onClose,
 }) => {
   const [step, setStep] = useState<number>(1);
-  const [noteType, setNoteType] = useState<HandwrittenNoteType>(
-    HandwrittenNoteType.SQUARED
-  );
+  // const [noteType, setNoteType] = useState<HandwrittenNoteType>(
+  //   HandwrittenNoteType.SQUARED
+  // );
+  const [noteType, setNoteType] = useState<undefined | HandwrittenNoteType>(undefined);
   const [backgroundClass, setBackgroundClass] = useState('');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
@@ -114,81 +116,17 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   if (!isOpened) return null;
 
   if (step === 1) {
-    return ReactDOM.createPortal(
-      <div
-        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-        onClick={onClose}
-      >
-        <div
-          className="
-            bg-white rounded shadow
-            w-[80vw] h-[80vh]
-            p-4
-            grid grid-cols-[1fr_4fr]
-            gap-4
-          "
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="shadow p-4 rounded overflow-auto">
-            <h2 className="text-xl font-bold mb-4">Available Note Types</h2>
-            <ul className="space-y-2">
-              {allNoteTypes.map((type) => (
-                <li
-                  key={type}
-                  onClick={() => setNoteType(type)}
-                  className={`
-                    p-2 rounded cursor-pointer
-                    transition-all hover:bg-gray-50
-                    ${noteType === type ? 'bg-gray-100 font-semibold' : ''}
-                  `}
-                >
-                  {type}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex flex-col h-full">
-            <div className="flex-1 grid grid-cols-3 grid-rows-3 gap-4 overflow-auto">
-              {allNoteTypes.map((type) => {
-                const previewClass = getNoteClass(type);
-                return (
-                  <div
-                    key={type}
-                    className={`
-                      h-[150px]
-                      aspect-[210/297]
-                      border-[5px] border-transparent 
-                      hover:border-gray-800 
-                      transition-all
-                      rounded
-                      overflow-hidden
-                      ${previewClass}
-                    `}
-                  />
-                );
-              })}
-            </div>
-
-            <div className="mt-4 py-1 px-2 flex justify-evenly border-t">
-              <button
-                className="px-4 py-1 bg-gray-300 rounded shadow hover:opacity-90"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:opacity-90"
-                onClick={() => setStep(2)}
-              >
-                Open
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>,
-      document.body
-    );
+    return (
+      <>
+        <HandwrittenStepChooseNoteType
+         onClose={onClose}
+         allNoteTypes={allNoteTypes}
+         getNoteClass={getNoteClass}
+         noteType={noteType}
+         setNoteType={setNoteType}
+         setStep={setStep}/>
+      </>
+    )
   }
 
   const heightNormal = '90vh';
