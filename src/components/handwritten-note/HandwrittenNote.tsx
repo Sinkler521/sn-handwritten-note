@@ -12,24 +12,28 @@ import {
   getNoteClass,
   allNoteTypes,
 } from './HandwrittenNoteTypes';
+import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2"
 import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
-import { HandwrittenStepChooseNoteType } from "./Handwritten-step-1"
+import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1"
 import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
 import './handwritten-note-styles.css';
 
 type HandwrittenNoteProps = {
   isOpened: boolean;
   onClose: () => void;
+
+  options?: {
+    strokes: any[], // strokes - info about drawing
+    editorData: any;
+  }
 };
 
 export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   isOpened,
   onClose,
+  options
 }) => {
   const [step, setStep] = useState<number>(1);
-  // const [noteType, setNoteType] = useState<HandwrittenNoteType>(
-  //   HandwrittenNoteType.SQUARED
-  // );
   const [noteType, setNoteType] = useState<undefined | HandwrittenNoteType>(undefined);
   const [backgroundClass, setBackgroundClass] = useState('');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
@@ -46,6 +50,9 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
   const windowRef = useRef<HTMLDivElement | null>(null);
+
+  const [currentEditorState, setCurrentEditorState] = useState<any[] | null>(options ? options.strokes : null);
+  const canvasRef = useRef<React.RefObject<HTMLDivElement>>(undefined)
 
   useEffect(() => {
     const initialX = (window.innerWidth - 600) / 2;
@@ -113,6 +120,13 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     }
   };
 
+  const handleEditorChange = (newStrokes: any[]) => {
+    if (JSON.stringify(newStrokes) !== JSON.stringify(currentEditorState)) {
+      setCurrentEditorState(newStrokes);
+      console.log("Strokes updated:", newStrokes);
+    }
+  };
+
   if (!isOpened) return null;
 
   if (step === 1) {
@@ -129,7 +143,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     )
   }
 
-  const heightNormal = '90vh';
+  const heightNormal = '80vh';
   const widthNormal = `calc(90vh * (210 / 297))`;
 
   let left: number | string = windowCoordinates.x;
@@ -156,86 +170,26 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     height,
   };
 
-  const minimizedButton = (
-    <button
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        width: '30px',
-        height: '30px',
-        transform: 'translate(-50%, -50%)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: '4px',
-        background: '#ccc',
-      }}
-      onClick={handleRestore}
-    >
-      <MdMinimize size={16} />
-    </button>
-  );
+  return (
+    <>
+      <HandwrittenStepCreateNote 
+        handleMinimize={handleMinimize}
+        handleRestore={handleRestore}
+        onClose={onClose}
+        windowRef={windowRef}
+        isMinimized={isMinimized}
+        isGrabbing={isGrabbing}
+        setIsGrabbing={setIsGrabbing}
+        setMouseOffset={setMouseOffset}
+        isFullScreen={isFullScreen}
+        toggleIsFullScreen={toggleIsFullScreen}
+        containerStyle={containerStyle}
+        windowCoordinates={windowCoordinates}
+        backgroundClass={backgroundClass}
 
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={onClose}>
-      <div
-        ref={windowRef}
-        style={containerStyle}
-        className={`
-          absolute
-          overflow-hidden
-          rounded
-          bg-white
-          ${backgroundClass}
-          ${isGrabbing ? '' : 'transition-all'}
-        `}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {isMinimized ? (
-          minimizedButton
-        ) : (
-          <>
-            <div
-              className="
-                w-full px-2 flex justify-end items-center
-                bg-white border-b
-                cursor-grab active:cursor-grabbing
-              "
-              onMouseDown={(e) => {
-                if (isFullScreen || isMinimized) return;
-                setIsGrabbing(true);
-                const offsetX = e.clientX - windowCoordinates.x;
-                const offsetY = e.clientY - windowCoordinates.y;
-                setMouseOffset({ x: offsetX, y: offsetY });
-              }}
-            >
-              <button
-                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
-                onClick={handleMinimize}
-              >
-                <MdMinimize size={24} />
-              </button>
-              <button
-                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
-                onClick={toggleIsFullScreen}
-              >
-                <MdOutlineFullscreen size={24} />
-              </button>
-              <button
-                className="border-l p-1 bg-red-300 transition-all hover:scale-95 hover:bg-red-400 cursor-pointer"
-                onClick={onClose}
-              >
-                <MdClose size={24} />
-              </button>
-            </div>
-            <HandwrittenNoteEditor onChange={() => {}} canvasRef={undefined} />
-          </>
-        )}
-      </div>
-    </div>,
-    document.body
-  );
+        canvasRef={canvasRef}
+        editorOnChange={handleEditorChange}
+      />
+    </>
+  )
 };

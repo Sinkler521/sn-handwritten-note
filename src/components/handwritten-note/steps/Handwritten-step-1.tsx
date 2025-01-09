@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { HandwrittenNoteType } from "./HandwrittenNoteTypes";
+import { HandwrittenNoteType } from "../HandwrittenNoteTypes";
 import { toast } from 'sonner';
 
 interface HandwrittenChooseNoteTypeProps {
@@ -41,7 +41,7 @@ export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypePr
         "
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative flex flex-col h-full rounded shadow overflow-hidden">
+        <div className="relative flex flex-col h-full rounded shadow overflow-hidden px-1">
           <h2 className="text-xl font-bold mb-4">Available Note Types</h2>
           <div className="flex-1 overflow-y-auto pr-2">
             <ul className="space-y-2">
