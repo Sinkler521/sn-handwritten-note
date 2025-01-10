@@ -6,53 +6,46 @@ import React, {
   useCallback,
   CSSProperties,
 } from 'react';
-import ReactDOM from 'react-dom';
 import {
   HandwrittenNoteType,
   getNoteClass,
   allNoteTypes,
 } from './HandwrittenNoteTypes';
-import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2"
-import { HandwrittenNoteEditor } from './editor/handwritten-note-editor';
-import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1"
-import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
+import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2";
+import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1";
+import { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import './handwritten-note-styles.css';
 
 type HandwrittenNoteProps = {
   isOpened: boolean;
   onClose: () => void;
-
-  options?: {
-    strokes: any[], // strokes - info about drawing
-    editorData: any;
-  }
 };
 
 export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   isOpened,
   onClose,
-  options
 }) => {
   const [step, setStep] = useState<number>(1);
-  const [noteType, setNoteType] = useState<undefined | HandwrittenNoteType>(undefined);
+  const [noteType, setNoteType] = useState<HandwrittenNoteType>();
   const [backgroundClass, setBackgroundClass] = useState('');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+
   const [windowCoordinates, setWindowCoordinates] = useState<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
   const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(
-    null
-  );
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(null);
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
-  const windowRef = useRef<HTMLDivElement | null>(null);
+  const [currentEditorState, setCurrentEditorState] = useState<any[] | null>(null);
+  const [hasEverLoaded, setHasEverLoaded] = useState<boolean>(false);
+  const [wasJustRestored, setWasJustRestored] = useState<boolean>(false);
 
-  const [currentEditorState, setCurrentEditorState] = useState<any[] | null>(options ? options.strokes : null);
-  const canvasRef = useRef<React.RefObject<HTMLDivElement>>(undefined)
+  const windowRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<ReactSketchCanvasRef>(null);
 
   useEffect(() => {
     const initialX = (window.innerWidth - 600) / 2;
@@ -61,7 +54,9 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   }, []);
 
   useEffect(() => {
-    if (noteType) setBackgroundClass(getNoteClass(noteType));
+    if (noteType) {
+      setBackgroundClass(getNoteClass(noteType));
+    }
   }, [noteType]);
 
   useEffect(() => {
@@ -83,9 +78,8 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   );
 
   useEffect(() => {
-    const handleMouseUp = () => {
-      setIsGrabbing(false);
-    };
+    const handleMouseUp = () => setIsGrabbing(false);
+
     if (isGrabbing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -95,6 +89,29 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isGrabbing, handleMouseMove]);
+
+  useEffect(() => {
+    if (
+      step === 2 &&
+      currentEditorState &&
+      canvasRef.current &&
+      (!hasEverLoaded || wasJustRestored)
+    ) {
+      try {
+        canvasRef.current.loadPaths(currentEditorState);
+        setHasEverLoaded(true);
+        setWasJustRestored(false); 
+      } catch (err) {
+        console.log("Error loading paths:", err);
+      }
+    }
+  }, [step, currentEditorState, hasEverLoaded, wasJustRestored]);
+
+  const handleEditorChange = (newStrokes: any[]) => {
+    if (JSON.stringify(newStrokes) !== JSON.stringify(currentEditorState)) {
+      setCurrentEditorState(newStrokes);
+    }
+  };
 
   const toggleIsFullScreen = () => {
     setIsFullScreen((prev) => {
@@ -106,7 +123,9 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const handleMinimize = () => {
     setBackToFullScreen(isFullScreen);
     setIsFullScreen(false);
-    if (!isFullScreen) setSavedCoordinates(windowCoordinates);
+    if (!isFullScreen) {
+      setSavedCoordinates(windowCoordinates);
+    }
     setIsMinimized(true);
   };
 
@@ -116,31 +135,26 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       setIsFullScreen(true);
     } else {
       setIsFullScreen(false);
-      if (savedCoordinates) setWindowCoordinates(savedCoordinates);
+      if (savedCoordinates) {
+        setWindowCoordinates(savedCoordinates);
+      }
     }
-  };
-
-  const handleEditorChange = (newStrokes: any[]) => {
-    if (JSON.stringify(newStrokes) !== JSON.stringify(currentEditorState)) {
-      setCurrentEditorState(newStrokes);
-      console.log("Strokes updated:", newStrokes);
-    }
+    setWasJustRestored(true);
   };
 
   if (!isOpened) return null;
 
   if (step === 1) {
     return (
-      <>
-        <HandwrittenStepChooseNoteType
-         onClose={onClose}
-         allNoteTypes={allNoteTypes}
-         getNoteClass={getNoteClass}
-         noteType={noteType}
-         setNoteType={setNoteType}
-         setStep={setStep}/>
-      </>
-    )
+      <HandwrittenStepChooseNoteType
+        onClose={onClose}
+        allNoteTypes={allNoteTypes}
+        getNoteClass={getNoteClass}
+        noteType={noteType}
+        setNoteType={setNoteType}
+        setStep={setStep}
+      />
+    );
   }
 
   const heightNormal = '80vh';
@@ -164,6 +178,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   }
 
   const containerStyle: CSSProperties = {
+    position: 'absolute',
     left,
     top,
     width,
@@ -171,25 +186,23 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   };
 
   return (
-    <>
-      <HandwrittenStepCreateNote 
-        handleMinimize={handleMinimize}
-        handleRestore={handleRestore}
-        onClose={onClose}
-        windowRef={windowRef}
-        isMinimized={isMinimized}
-        isGrabbing={isGrabbing}
-        setIsGrabbing={setIsGrabbing}
-        setMouseOffset={setMouseOffset}
-        isFullScreen={isFullScreen}
-        toggleIsFullScreen={toggleIsFullScreen}
-        containerStyle={containerStyle}
-        windowCoordinates={windowCoordinates}
-        backgroundClass={backgroundClass}
-
-        canvasRef={canvasRef}
-        editorOnChange={handleEditorChange}
-      />
-    </>
-  )
+    <HandwrittenStepCreateNote
+      handleMinimize={handleMinimize}
+      handleRestore={handleRestore}
+      onClose={onClose}
+      windowRef={windowRef}
+      isMinimized={isMinimized}
+      isGrabbing={isGrabbing}
+      setIsGrabbing={setIsGrabbing}
+      setMouseOffset={setMouseOffset}
+      isFullScreen={isFullScreen}
+      toggleIsFullScreen={toggleIsFullScreen}
+      containerStyle={containerStyle}
+      windowCoordinates={windowCoordinates}
+      backgroundClass={backgroundClass}
+      // @ts-ignore
+      canvasRef={canvasRef}
+      editorOnChange={handleEditorChange}
+    />
+  );
 };
