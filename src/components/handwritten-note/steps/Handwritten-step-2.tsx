@@ -18,7 +18,6 @@ interface HandwrittenStepCreateNoteProps {
   containerStyle: object;
   windowCoordinates: { x: number; y: number };
   backgroundClass: string;
-
   canvasRef: RefObject<ReactSketchCanvasRef>;
   editorOnChange: (strokes: any[]) => void;
 }
@@ -99,7 +98,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
                 <MdClose size={24} />
               </button>
             </div>
-
+            
             <HandwrittenNoteEditor
               onChange={props.editorOnChange}
               canvasRef={props.canvasRef}

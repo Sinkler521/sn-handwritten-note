@@ -14,3 +14,18 @@
 .handwritten-opened-upper-panel{
   background-color: rgb(244, 250, 255);
 }
+
+.handwritten-drawing-panel{
+  background-color: rgb(240, 240, 240);
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.handwritten-drawing-panel button{
+  width: 40px;
+  height: 40px;
+}

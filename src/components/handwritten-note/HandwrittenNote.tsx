@@ -16,14 +16,27 @@ import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1";
 import { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import './handwritten-note-styles.css';
 
+type EditorOptions = {
+  isEverChanged?: boolean;
+  strokes?: any[] | null;
+  svg?: SVGAElement | null;
+  backgroundImage?: string | null;
+  currentColor?: string | null;
+  currentWidth?: string | null;
+  imageWidth: number | string | null;
+  imageHeight: number | string | null;
+};
+
 type HandwrittenNoteProps = {
   isOpened: boolean;
   onClose: () => void;
+  editorOptions: EditorOptions;
 };
 
 export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   isOpened,
   onClose,
+  editorOptions = {}
 }) => {
   const [step, setStep] = useState<number>(1);
   const [noteType, setNoteType] = useState<HandwrittenNoteType>();
@@ -40,7 +53,21 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(null);
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
-  const [currentEditorState, setCurrentEditorState] = useState<any[] | null>(null);
+  const [currentStrokes, setCurrentStrokes] = useState<any[] | null>(
+    editorOptions.strokes ? editorOptions.strokes : null
+  );
+
+  const [currentEditorState, setCurrentEditorState] = useState<EditorOptions>({
+    isEverChanged: editorOptions.isEverChanged,
+    strokes: editorOptions.strokes ?? null,
+    svg: editorOptions.svg ?? null,
+    backgroundImage: editorOptions.backgroundImage ?? null,
+    currentColor: editorOptions.currentColor ?? '#000000',
+    currentWidth: editorOptions.currentWidth ?? '4',
+    imageWidth: editorOptions.imageWidth ?? null,
+    imageHeight: editorOptions.imageHeight ?? null
+  });
+
   const [hasEverLoaded, setHasEverLoaded] = useState<boolean>(false);
   const [wasJustRestored, setWasJustRestored] = useState<boolean>(false);
 
@@ -93,23 +120,23 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   useEffect(() => {
     if (
       step === 2 &&
-      currentEditorState &&
+      currentStrokes &&
       canvasRef.current &&
       (!hasEverLoaded || wasJustRestored)
     ) {
       try {
-        canvasRef.current.loadPaths(currentEditorState);
+        canvasRef.current.loadPaths(currentStrokes);
         setHasEverLoaded(true);
-        setWasJustRestored(false); 
+        setWasJustRestored(false);
       } catch (err) {
         console.log("Error loading paths:", err);
       }
     }
-  }, [step, currentEditorState, hasEverLoaded, wasJustRestored]);
+  }, [step, currentStrokes, hasEverLoaded, wasJustRestored]);
 
   const handleEditorChange = (newStrokes: any[]) => {
-    if (JSON.stringify(newStrokes) !== JSON.stringify(currentEditorState)) {
-      setCurrentEditorState(newStrokes);
+    if (JSON.stringify(newStrokes) !== JSON.stringify(currentStrokes)) {
+      setCurrentStrokes(newStrokes);
     }
   };
 
