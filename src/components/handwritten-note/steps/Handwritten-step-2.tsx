@@ -1,25 +1,22 @@
 import { Dispatch, SetStateAction, RefObject } from 'react';
 import ReactDOM from 'react-dom';
-import { HandwrittenNoteEditor } from '../editor/handwritten-note-editor';
 import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
-import { ReactSketchCanvasRef } from 'react-sketch-canvas';
+import { HandwrittenNoteEditor } from '../editor/handwritten-note-editor';
 
 interface HandwrittenStepCreateNoteProps {
   handleRestore: () => void;
   handleMinimize: () => void;
   onClose: () => void;
-  windowRef: RefObject<HTMLDivElement | null>;
+  windowRef: RefObject<HTMLDivElement> | null;
   isMinimized: boolean;
   isGrabbing: boolean;
   setIsGrabbing: Dispatch<SetStateAction<boolean>>;
   setMouseOffset: Dispatch<SetStateAction<{ x: number; y: number }>>;
   isFullScreen: boolean;
   toggleIsFullScreen: () => void;
-  containerStyle: object;
+  containerStyle: React.CSSProperties;
   windowCoordinates: { x: number; y: number };
   backgroundClass: string;
-  canvasRef: RefObject<ReactSketchCanvasRef>;
-  editorOnChange: (strokes: any[]) => void;
 }
 
 export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps) => {
@@ -46,17 +43,19 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
   );
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={props.onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-black bg-opacity-50"
+      onClick={props.onClose}
+    >
       <div
         ref={props.windowRef}
         style={props.containerStyle}
         className={`
           absolute
-          overflow-hidden
           rounded
-          bg-white
           ${props.backgroundClass}
           ${props.isGrabbing ? '' : 'transition-all'}
+          flex flex-col
         `}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -98,11 +97,10 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
                 <MdClose size={24} />
               </button>
             </div>
-            
-            <HandwrittenNoteEditor
-              onChange={props.editorOnChange}
-              canvasRef={props.canvasRef}
-            />
+
+            <div className="flex-1 overflow-auto">
+              <HandwrittenNoteEditor />
+            </div>
           </>
         )}
       </div>

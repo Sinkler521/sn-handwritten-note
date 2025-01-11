@@ -13,13 +13,10 @@ import {
 } from './HandwrittenNoteTypes';
 import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2";
 import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1";
-import { ReactSketchCanvasRef } from 'react-sketch-canvas';
 import './handwritten-note-styles.css';
 
 type EditorOptions = {
   isEverChanged?: boolean;
-  strokes?: any[] | null;
-  svg?: SVGAElement | null;
   backgroundImage?: string | null;
   currentColor?: string | null;
   currentWidth?: string | null;
@@ -30,13 +27,13 @@ type EditorOptions = {
 type HandwrittenNoteProps = {
   isOpened: boolean;
   onClose: () => void;
-  editorOptions: EditorOptions;
+  editorOptions?: EditorOptions;
 };
 
 export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   isOpened,
   onClose,
-  editorOptions = {}
+  editorOptions = {},
 }) => {
   const [step, setStep] = useState<number>(1);
   const [noteType, setNoteType] = useState<HandwrittenNoteType>();
@@ -45,35 +42,21 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
 
-  const [windowCoordinates, setWindowCoordinates] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(null);
+  const [windowCoordinates, setWindowCoordinates] = useState<{ x: number; y: number }>(
+    { x: 0, y: 0 }
+  );
+  const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>(
+    { x: 0, y: 0 }
+  );
+  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
-  const [currentStrokes, setCurrentStrokes] = useState<any[] | null>(
-    editorOptions.strokes ? editorOptions.strokes : null
-  );
-
-  const [currentEditorState, setCurrentEditorState] = useState<EditorOptions>({
-    isEverChanged: editorOptions.isEverChanged,
-    strokes: editorOptions.strokes ?? null,
-    svg: editorOptions.svg ?? null,
-    backgroundImage: editorOptions.backgroundImage ?? null,
-    currentColor: editorOptions.currentColor ?? '#000000',
-    currentWidth: editorOptions.currentWidth ?? '4',
-    imageWidth: editorOptions.imageWidth ?? null,
-    imageHeight: editorOptions.imageHeight ?? null
-  });
-
-  const [hasEverLoaded, setHasEverLoaded] = useState<boolean>(false);
-  const [wasJustRestored, setWasJustRestored] = useState<boolean>(false);
-
-  const windowRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<ReactSketchCanvasRef>(null);
-
+  // Можно хранить какие-то настройки редактора в локальном стейте
+  // Убираем логику "react-sketch-canvas", т. к. переходим на tldraw
+  // ...
+  
   useEffect(() => {
     const initialX = (window.innerWidth - 600) / 2;
     const initialY = window.innerHeight * 0.2;
@@ -86,6 +69,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     }
   }, [noteType]);
 
+  // Полноэкран
   useEffect(() => {
     if (isFullScreen) {
       setIsGrabbing(false);
@@ -95,7 +79,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   }, [isFullScreen, savedCoordinates]);
 
   const handleMouseMove = useCallback(
-    (e: MouseEvent | globalThis.MouseEvent) => {
+    (e: MouseEvent) => {
       if (!isGrabbing || isFullScreen || isMinimized) return;
       const newX = e.clientX - mouseOffset.x;
       const newY = e.clientY - mouseOffset.y;
@@ -117,32 +101,11 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     };
   }, [isGrabbing, handleMouseMove]);
 
-  useEffect(() => {
-    if (
-      step === 2 &&
-      currentStrokes &&
-      canvasRef.current &&
-      (!hasEverLoaded || wasJustRestored)
-    ) {
-      try {
-        canvasRef.current.loadPaths(currentStrokes);
-        setHasEverLoaded(true);
-        setWasJustRestored(false);
-      } catch (err) {
-        console.log("Error loading paths:", err);
-      }
-    }
-  }, [step, currentStrokes, hasEverLoaded, wasJustRestored]);
-
-  const handleEditorChange = (newStrokes: any[]) => {
-    if (JSON.stringify(newStrokes) !== JSON.stringify(currentStrokes)) {
-      setCurrentStrokes(newStrokes);
-    }
-  };
-
   const toggleIsFullScreen = () => {
     setIsFullScreen((prev) => {
-      if (!prev) setSavedCoordinates(windowCoordinates);
+      if (!prev) {
+        setSavedCoordinates(windowCoordinates);
+      }
       return !prev;
     });
   };
@@ -166,7 +129,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
         setWindowCoordinates(savedCoordinates);
       }
     }
-    setWasJustRestored(true);
   };
 
   if (!isOpened) return null;
@@ -184,13 +146,12 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
-  const heightNormal = '80vh';
-  const widthNormal = `calc(90vh * (210 / 297))`;
-
+  // Ширина — 50% экрана, высота = (2/3) * width => соотношение 3:2
+  // => width = '50vw', height = 'calc(50vw * (2/3))'
   let left: number | string = windowCoordinates.x;
   let top: number | string = windowCoordinates.y;
-  let width: number | string = widthNormal;
-  let height: number | string = heightNormal;
+  let width: number | string = '50vw';
+  let height: number | string = 'calc(50vw * (2 / 3))';
 
   if (isFullScreen) {
     left = 0;
@@ -217,7 +178,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       handleMinimize={handleMinimize}
       handleRestore={handleRestore}
       onClose={onClose}
-      windowRef={windowRef}
+      windowRef={null}
       isMinimized={isMinimized}
       isGrabbing={isGrabbing}
       setIsGrabbing={setIsGrabbing}
@@ -227,9 +188,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       containerStyle={containerStyle}
       windowCoordinates={windowCoordinates}
       backgroundClass={backgroundClass}
-      // @ts-ignore
-      canvasRef={canvasRef}
-      editorOnChange={handleEditorChange}
     />
   );
 };
