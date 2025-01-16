@@ -1,48 +1,38 @@
+
 export enum HandwrittenNoteType {
-    SQUARED = 'squared',
-    RULED = 'ruled',
-  }
+  SQUARED = 'squared',
+  RULED = 'ruled',
 
-export const getNoteClass = (noteType: HandwrittenNoteType): string => {
-    switch (noteType) {
-      case HandwrittenNoteType.SQUARED:
-        return 'paper-squared';
-      case HandwrittenNoteType.RULED:
-        return 'paper-ruled';
-      default:
-        return 'paper-squared';
-    }
-  };
+  // others
+}
 
-export const getAssetLink = (noteType: HandwrittenNoteType): string => {
-  const dirPath = '/assets/svg/paper-types/';
+interface NoteTypeConfig {
+  className: string
+  assetLink: string
+}
 
-  switch (noteType) {
-    case HandwrittenNoteType.SQUARED:
-      return dirPath + 'paper-squared.svg';
-    case HandwrittenNoteType.RULED:
-      return dirPath + 'paper-ruled.svg';
-    default:
-      return dirPath + 'paper-squared.svg';
-  }
-}  
+const NOTE_TYPE_CONFIG: Record<HandwrittenNoteType, NoteTypeConfig> = {
+  [HandwrittenNoteType.SQUARED]: {
+    className: 'paper-squared',
+    assetLink: '/assets/svg/paper-types/paper-squared.svg',
+  },
+  [HandwrittenNoteType.RULED]: {
+    className: 'paper-ruled',
+    assetLink: '/assets/svg/paper-types/paper-ruled.svg',
+  },
+  // others
+}
 
-  export const allNoteTypes = [
-    HandwrittenNoteType.SQUARED,
-    HandwrittenNoteType.RULED,
+export function getNoteConfig(noteType: HandwrittenNoteType): NoteTypeConfig {
+  return NOTE_TYPE_CONFIG[noteType]
+}
 
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED,
-    // HandwrittenNoteType.SQUARED,
-    // HandwrittenNoteType.RULED
-  ]
+export function getNoteClass(noteType: HandwrittenNoteType): string {
+  return NOTE_TYPE_CONFIG[noteType].className
+}
+
+export function getAssetLink(noteType: HandwrittenNoteType): string {
+  return NOTE_TYPE_CONFIG[noteType].assetLink
+}
+
+export const allNoteTypes = Object.keys(NOTE_TYPE_CONFIG) as HandwrittenNoteType[]
