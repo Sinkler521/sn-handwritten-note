@@ -79,19 +79,19 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
               }}
             >
               <button
-                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-100 cursor-pointer"
                 onClick={props.handleMinimize}
               >
                 <MdMinimize size={24} />
               </button>
               <button
-                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-50 cursor-pointer"
+                className="border-l p-1 bg-white transition-all hover:scale-95 hover:bg-gray-100 cursor-pointer"
                 onClick={props.toggleIsFullScreen}
               >
                 <MdOutlineFullscreen size={24} />
               </button>
               <button
-                className="border-l p-1 bg-red-300 transition-all hover:scale-95 hover:bg-red-400 cursor-pointer"
+                className="border-l p-1 bg-red-white transition-all hover:scale-95 hover:bg-red-300 cursor-pointer"
                 onClick={props.onClose}
               >
                 <MdClose size={24} />
