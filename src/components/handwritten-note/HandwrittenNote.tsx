@@ -52,10 +52,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     null
   );
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
-
-  // Можно хранить какие-то настройки редактора в локальном стейте
-  // Убираем логику "react-sketch-canvas", т. к. переходим на tldraw
-  // ...
   
   useEffect(() => {
     const initialX = (window.innerWidth - 600) / 2;
@@ -69,7 +65,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     }
   }, [noteType]);
 
-  // Полноэкран
   useEffect(() => {
     if (isFullScreen) {
       setIsGrabbing(false);
@@ -146,8 +141,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
-  // Ширина — 50% экрана, высота = (2/3) * width => соотношение 3:2
-  // => width = '50vw', height = 'calc(50vw * (2/3))'
   let left: number | string = windowCoordinates.x;
   let top: number | string = windowCoordinates.y;
   let width: number | string = '50vw';

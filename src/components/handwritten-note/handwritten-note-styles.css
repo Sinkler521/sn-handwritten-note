@@ -1,11 +1,11 @@
 .paper-squared {
-    background-image: url('assets/svg/paper-types/paper-squared.svg'); 
+    background-image: url('../../../public/assets/svg/paper-types/paper-squared.svg'); 
     background-repeat: repeat;
     background-size: 20px 20px;
     background-color: white;
   }
 .paper-ruled {
-  background-image: url('assets/svg/paper-types/paper-ruled.svg');
+  background-image: url('../../../public/assets/svg/paper-types/paper-ruled.svg');
   background-repeat: repeat; /* Повторяем и по ширине, и по высоте */
   background-size: 20px 20px; /* Повтор каждые 20px по ширине и высоте */
   background-color: white;
