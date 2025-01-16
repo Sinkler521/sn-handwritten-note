@@ -14,6 +14,19 @@ export const getNoteClass = (noteType: HandwrittenNoteType): string => {
     }
   };
 
+export const getAssetLink = (noteType: HandwrittenNoteType): string => {
+  const dirPath = '/assets/svg/paper-types/';
+
+  switch (noteType) {
+    case HandwrittenNoteType.SQUARED:
+      return dirPath + 'paper-squared.svg';
+    case HandwrittenNoteType.RULED:
+      return dirPath + 'paper-ruled.svg';
+    default:
+      return dirPath + 'paper-squared.svg';
+  }
+}  
+
   export const allNoteTypes = [
     HandwrittenNoteType.SQUARED,
     HandwrittenNoteType.RULED,

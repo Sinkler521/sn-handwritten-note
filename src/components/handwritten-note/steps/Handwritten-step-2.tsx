@@ -1,7 +1,8 @@
-import { Dispatch, SetStateAction, RefObject } from 'react';
+import { Dispatch, SetStateAction, RefObject, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { MdMinimize, MdOutlineFullscreen, MdClose } from 'react-icons/md';
 import { HandwrittenNoteEditor } from '../editor/handwritten-note-editor';
+import { HandwrittenNoteType, getAssetLink } from "../HandwrittenNoteTypes"
 
 interface HandwrittenStepCreateNoteProps {
   handleRestore: () => void;
@@ -17,9 +18,18 @@ interface HandwrittenStepCreateNoteProps {
   containerStyle: React.CSSProperties;
   windowCoordinates: { x: number; y: number };
   backgroundClass: string;
+  noteType: HandwrittenNoteType | undefined;
 }
 
 export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps) => {
+  const [assetLink, setAssetLink] = useState<string | undefined>()
+
+  useEffect(() => {
+    if(props.noteType){
+      setAssetLink(getAssetLink(props.noteType))
+    }
+  }, [props.noteType])
+
   const minimizedButton = (
     <button
       style={{
@@ -99,7 +109,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
             </div>
 
             <div className="flex-1 overflow-auto">
-              <HandwrittenNoteEditor />
+              <HandwrittenNoteEditor assetLink={assetLink} />
             </div>
           </>
         )}

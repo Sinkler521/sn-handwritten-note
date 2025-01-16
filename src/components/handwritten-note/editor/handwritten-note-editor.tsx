@@ -9,7 +9,13 @@ import {
 import "tldraw/tldraw.css"
 import { svgToImage } from "../helpers/svgToImage"
 
-export function HandwrittenNoteEditor() {
+interface HandwrittenNoteEditorProps{
+  assetLink: string | undefined;
+}
+
+export function HandwrittenNoteEditor({
+  assetLink
+}: HandwrittenNoteEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -17,27 +23,23 @@ export function HandwrittenNoteEditor() {
     setEditor(editorInstance)
   }, [])
 
-  // 1) Создаём фоновое изображение размером с окно браузера
   useEffect(() => {
-    if (!editor) return
+    if (!editor || !assetLink) return
 
-    // Берём размеры окна, а НЕ контейнера
     const windowW = window.innerWidth
     const windowH = window.innerHeight
     console.log("Window dimensions:", windowW, windowH)
 
     const run = async () => {
-      const res = await fetch('/assets/svg/paper-types/paper-squared.svg')
+      const res = await fetch(assetLink)
       if (!res.ok) {
         throw new Error(`Failed to fetch SVG: ${res.status}`)
       }
       const svgText = await res.text()
 
-      // Генерируем PNG, "замостив" SVG на всю ширину/высоту окна
       const finalImg = await svgToImage(svgText, windowW, windowH)
       if (!editor) return
 
-      // Создаём asset (из dataURL)
       const assetId = AssetRecordType.createId()
       editor.createAssets([
         {
@@ -56,7 +58,6 @@ export function HandwrittenNoteEditor() {
         },
       ])
 
-      // Создаём image shape размером во весь экран
       const shapeId = createShapeId()
       const pageId = editor.getCurrentPageId()
       editor.createShape<TLImageShape>({
@@ -65,7 +66,7 @@ export function HandwrittenNoteEditor() {
         parentId: pageId,
         x: 0,
         y: 0,
-        isLocked: true, // нельзя изменить/переместить
+        isLocked: true,
         props: {
           w: windowW,
           h: windowH,
@@ -73,7 +74,6 @@ export function HandwrittenNoteEditor() {
         },
       })
 
-      // Отправляем вниз, очищаем историю
       editor.sendToBack([{ id: shapeId, type: 'shape' }])
       editor.clearHistory()
     }
@@ -83,11 +83,9 @@ export function HandwrittenNoteEditor() {
     })
   }, [editor])
 
-  // 2) Ограничиваем камеру
   useEffect(() => {
     if (!editor) return
 
-    // Указываем границы, равные окну браузера (при обычном состоянии)
     const w = window.innerWidth
     const h = window.innerHeight
 
@@ -100,12 +98,9 @@ export function HandwrittenNoteEditor() {
         origin: { x: 0, y: 0 },
         behavior: 'contain',
       },
-      // Заблокировать панорамирование камеры при обычном зуме
-      // (пользователь может двигать камеру только при увеличении)
       isLocked: true,
     })
 
-    // Устанавливаем камеру на (0,0) и zoom=1
     try {
       editor.setCamera({ x: 0, y: 0, zoom: 1 })
     } catch (e) {

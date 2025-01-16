@@ -181,6 +181,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       containerStyle={containerStyle}
       windowCoordinates={windowCoordinates}
       backgroundClass={backgroundClass}
+      noteType={noteType}
     />
   );
 };
