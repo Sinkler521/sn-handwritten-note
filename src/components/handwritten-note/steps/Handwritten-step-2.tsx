@@ -76,7 +76,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
           <>
             <div
               className="
-                w-full px-2 flex justify-end items-center
+                w-full flex justify-end items-center
                 bg-white border-b
                 cursor-grab active:cursor-grabbing
               "
@@ -101,7 +101,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
                 <MdOutlineFullscreen size={24} />
               </button>
               <button
-                className="border-l p-1 bg-red-white transition-all hover:scale-95 hover:bg-red-300 cursor-pointer"
+                className="border-l p-1 bg-red-white transition-all hover:scale-95 hover:bg-red-600 hover:text-white cursor-pointer"
                 onClick={props.onClose}
               >
                 <MdClose size={24} />
