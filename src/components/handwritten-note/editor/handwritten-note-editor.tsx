@@ -5,19 +5,21 @@ import {
   createShapeId,
   AssetRecordType,
   TLImageShape,
-} from 'tldraw'
-import "tldraw/tldraw.css"
-import { svgToImage } from "../helpers/svgToImage"
+} from 'tldraw';
+import "tldraw/tldraw.css";
+import { svgToImage } from "../helpers/svgToImage";
 
 interface HandwrittenNoteEditorProps{
   assetLink: string | undefined;
+  shapesData: object | undefined
 }
 
 export function HandwrittenNoteEditor({
-  assetLink
+  assetLink,
+  shapesData
 }: HandwrittenNoteEditorProps) {
-  const [editor, setEditor] = useState<Editor | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMount = useCallback((editorInstance: Editor) => {
     setEditor(editorInstance)
@@ -108,9 +110,15 @@ export function HandwrittenNoteEditor({
     }
   }, [editor])
 
+  useEffect(() => {
+    if (!editor || !shapesData) return;
+    const shapes = JSON.parse(shapesData);
+    editor.createShapes(shapes);
+  }, [shapesData])
+
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-      <Tldraw onMount={handleMount} forceMobile/>
+        <Tldraw onMount={handleMount} forceMobile/>
     </div>
   )
 }

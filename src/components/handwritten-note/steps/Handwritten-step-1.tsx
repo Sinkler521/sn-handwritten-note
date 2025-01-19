@@ -13,7 +13,7 @@ interface HandwrittenChooseNoteTypeProps {
 }
 
 export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypeProps) => {
-  const [isTypeSelected, setIsTypeSelected] = useState<boolean>(false);
+  const [isTypeSelected, setIsTypeSelected] = useState<boolean>(true);
 
   const handleSelectType = (clickedType: HandwrittenNoteType) => {
     if (props.noteType === clickedType) {

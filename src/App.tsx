@@ -50,6 +50,14 @@ function App() {
           <HandwrittenNote
             isOpened={showNote}
             onClose={() => setShowNote(false)}
+            updateBlockProperty={() => {}}
+            editorOptions={{
+              isEverChanged: false,
+              noteType: 'squared',
+              imageHeight: '200',
+              imageWidth: '200',
+              previewImage: undefined,
+            }}
           />
       )}
     </div>

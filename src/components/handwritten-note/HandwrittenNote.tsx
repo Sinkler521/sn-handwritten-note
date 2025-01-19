@@ -11,29 +11,32 @@ import {
   getNoteClass,
   allNoteTypes,
 } from './HandwrittenNoteTypes';
+import { stringToNoteType } from './helpers/helpers';
 import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2";
 import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1";
 import './handwritten-note-styles.css';
 
-type EditorOptions = {
+export interface EditorOptions {
   isEverChanged?: boolean;
-  backgroundImage?: string | null;
-  currentColor?: string | null;
-  currentWidth?: string | null;
+  noteType?: string;
   imageWidth: number | string | null;
   imageHeight: number | string | null;
-};
 
-type HandwrittenNoteProps = {
+  shapesData?: string | undefined;
+  previewImage: string | undefined;
+}
+
+interface HandwrittenNoteProps {
   isOpened: boolean;
   onClose: () => void;
-  editorOptions?: EditorOptions;
-};
+  updateBlockProperty: (key: string, value: any) => void;
+  editorOptions: EditorOptions;
+}
 
 export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   isOpened,
   onClose,
-  editorOptions = {},
+  editorOptions,
 }) => {
   const [step, setStep] = useState<number>(1);
   const [noteType, setNoteType] = useState<HandwrittenNoteType>();
@@ -42,17 +45,31 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
 
+  const [currentShapesData, setCurrentShapesData] = useState<object | undefined>();
+  const [currentPreviewImage, setCurrentPreviewImage] = useState<string>('');
+
+  const [currentPreviewDimensions, setCurrentPreviewDimensions] = useState<object | undefined>({x: 250, y: 250})
+
   const [windowCoordinates, setWindowCoordinates] = useState<{ x: number; y: number }>(
     { x: 0, y: 0 }
   );
-  const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>(
-    { x: 0, y: 0 }
-  );
-  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(
-    null
-  );
+  const [mouseOffset, setMouseOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(null);
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
-  
+
+  useEffect(() => {
+    if(editorOptions){
+      const {shapesData, previewImage, noteType, imageWidth, imageHeight} = editorOptions
+      if(shapesData) setCurrentShapesData(shapesData);
+      if(previewImage) setCurrentPreviewImage(previewImage);
+      if(noteType){
+        const parsedNoteType = stringToNoteType(noteType);
+        setNoteType(parsedNoteType);
+      }
+      if(imageWidth && imageHeight) setCurrentPreviewDimensions({x: imageWidth, y: imageHeight})
+    }
+  }, [editorOptions])
+
   useEffect(() => {
     const initialX = (window.innerWidth - 600) / 2;
     const initialY = window.innerHeight * 0.2;
@@ -128,7 +145,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
 
   if (!isOpened) return null;
 
-  if (step === 1) {
+  if (step === 1 && !editorOptions.shapesData) {
     return (
       <HandwrittenStepChooseNoteType
         onClose={onClose}
@@ -141,6 +158,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
+  // Вычисляем размеры окна
   let left: number | string = windowCoordinates.x;
   let top: number | string = windowCoordinates.y;
   let width: number | string = '50vw';
@@ -167,21 +185,25 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   };
 
   return (
-    <HandwrittenStepCreateNote
-      handleMinimize={handleMinimize}
-      handleRestore={handleRestore}
-      onClose={onClose}
-      windowRef={null}
-      isMinimized={isMinimized}
-      isGrabbing={isGrabbing}
-      setIsGrabbing={setIsGrabbing}
-      setMouseOffset={setMouseOffset}
-      isFullScreen={isFullScreen}
-      toggleIsFullScreen={toggleIsFullScreen}
-      containerStyle={containerStyle}
-      windowCoordinates={windowCoordinates}
-      backgroundClass={backgroundClass}
-      noteType={noteType}
-    />
-  );
+    <>
+      <HandwrittenStepCreateNote
+        handleMinimize={handleMinimize}
+        handleRestore={handleRestore}
+        onClose={onClose}
+        windowRef={null}
+        isMinimized={isMinimized}
+        isGrabbing={isGrabbing}
+        setIsGrabbing={setIsGrabbing}
+        setMouseOffset={setMouseOffset}
+        isFullScreen={isFullScreen}
+        toggleIsFullScreen={toggleIsFullScreen}
+        containerStyle={containerStyle}
+        windowCoordinates={windowCoordinates}
+        backgroundClass={backgroundClass}
+        noteType={noteType}
+
+        shapesData={currentShapesData}
+      />
+    </>
+  )
 };
