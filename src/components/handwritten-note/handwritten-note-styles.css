@@ -29,3 +29,8 @@
   width: 40px;
   height: 40px;
 }
+
+.tldraw__editor [data-panel='top'] {
+  pointer-events: auto;
+  z-index: 9999;
+}

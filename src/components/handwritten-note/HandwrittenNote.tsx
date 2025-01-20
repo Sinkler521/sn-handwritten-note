@@ -40,7 +40,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
 }) => {
   const [step, setStep] = useState<number>(1);
   const [noteType, setNoteType] = useState<HandwrittenNoteType>();
-  const [backgroundClass, setBackgroundClass] = useState('');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [isGrabbing, setIsGrabbing] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
@@ -75,12 +74,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     const initialY = window.innerHeight * 0.2;
     setWindowCoordinates({ x: initialX, y: initialY });
   }, []);
-
-  useEffect(() => {
-    if (noteType) {
-      setBackgroundClass(getNoteClass(noteType));
-    }
-  }, [noteType]);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -158,7 +151,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     );
   }
 
-  // Вычисляем размеры окна
   let left: number | string = windowCoordinates.x;
   let top: number | string = windowCoordinates.y;
   let width: number | string = '50vw';
@@ -199,7 +191,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
         toggleIsFullScreen={toggleIsFullScreen}
         containerStyle={containerStyle}
         windowCoordinates={windowCoordinates}
-        backgroundClass={backgroundClass}
         noteType={noteType}
 
         shapesData={currentShapesData}

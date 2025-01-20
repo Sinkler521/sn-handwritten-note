@@ -5,12 +5,14 @@ import {
   createShapeId,
   AssetRecordType,
   TLImageShape,
-} from 'tldraw';
-import "tldraw/tldraw.css";
-import { svgToImage } from "../helpers/svgToImage";
+} from 'tldraw'
+import "tldraw/tldraw.css"
+import { svgToImage } from "../helpers/svgToImage"
+import { TopPanel } from './TopPanel'
+import { lockImageAspectRatio } from './shapes/lockAspectRatio'
 
-interface HandwrittenNoteEditorProps{
-  assetLink: string | undefined;
+interface HandwrittenNoteEditorProps {
+  assetLink: string | undefined
   shapesData: object | undefined
 }
 
@@ -18,8 +20,7 @@ export function HandwrittenNoteEditor({
   assetLink,
   shapesData
 }: HandwrittenNoteEditorProps) {
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [editor, setEditor] = useState<Editor | null>(null)
 
   const handleMount = useCallback((editorInstance: Editor) => {
     setEditor(editorInstance)
@@ -30,7 +31,6 @@ export function HandwrittenNoteEditor({
 
     const windowW = window.innerWidth
     const windowH = window.innerHeight
-    console.log("Window dimensions:", windowW, windowH)
 
     const run = async () => {
       const res = await fetch(assetLink)
@@ -83,11 +83,10 @@ export function HandwrittenNoteEditor({
     run().catch(err => {
       console.error("loadBackground error:", err)
     })
-  }, [editor])
+  }, [editor, assetLink])
 
   useEffect(() => {
     if (!editor) return
-
     const w = window.innerWidth
     const h = window.innerHeight
 
@@ -111,14 +110,28 @@ export function HandwrittenNoteEditor({
   }, [editor])
 
   useEffect(() => {
-    if (!editor || !shapesData) return;
-    const shapes = JSON.parse(shapesData);
-    editor.createShapes(shapes);
-  }, [shapesData])
+    if (!editor || !shapesData) return
+    const shapes = JSON.parse(shapesData as string)
+    editor.createShapes(shapes)
+  }, [editor, shapesData])
+
+  useEffect(() => {
+    if (!editor) return
+    const removeLockAspect = lockImageAspectRatio(editor)
+    return () => {
+      removeLockAspect()
+    }
+  }, [editor])
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-        <Tldraw onMount={handleMount} forceMobile/>
+    <div style={{ width: '100%', height: '100%' }}>
+      <Tldraw
+        onMount={handleMount}
+        forceMobile
+        components={{
+          TopPanel: TopPanel,
+        }}
+      />
     </div>
   )
 }
