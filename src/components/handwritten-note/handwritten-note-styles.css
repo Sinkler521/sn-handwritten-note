@@ -34,3 +34,12 @@
   pointer-events: auto;
   z-index: 9999;
 }
+
+.handwritten-top-panel{
+  z-index: 9999;
+}
+
+.handwritten-top-panel-button{
+  width: 30px;
+  height: 30px;
+}

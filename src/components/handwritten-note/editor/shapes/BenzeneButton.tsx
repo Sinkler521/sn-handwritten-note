@@ -6,7 +6,7 @@ import { TbHexagonLetterO } from "react-icons/tb";
 export const BenzeneButton = () => {
   const editor = useEditor()
 
-  const addBenzeneRing = () => {
+  const addShape = () => {
     if (!editor) return
 
     const screenBounds = editor.getViewportScreenBounds()
@@ -49,20 +49,10 @@ export const BenzeneButton = () => {
   }
 
   return (
-    <div style={{ marginRight: '1rem' }}>
+    <div>
       <button
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 4,
-          border: '1px solid #ccc',
-          background: '#fff',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        onClick={addBenzeneRing}
+        className={`handwritten-top-panel-button border rounded-md bg-white cursor-pointer flex justify-center items-center transition-all hover:bg-gray-100`}
+        onClick={addShape}
       >
         <TbHexagonLetterO size={20} />
       </button>

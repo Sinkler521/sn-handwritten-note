@@ -4,20 +4,9 @@ import { HexaneButton } from './shapes/HexaneButton';
 
 export function TopPanel() {
   return (
-    <div
-      style={{
-        position:'relative',
-        display:'flex',
-        alignItems:'center',
-        padding:'0.5rem',
-        background:'#f8f8f8',
-        borderBottom:'1px solid #ccc',
-        pointerEvents:'auto',
-        zIndex:9999,
-      }}
-    >
-      <BenzeneButton/>
-      <HexaneButton/>
+    <div className="relative flex items-center p-2 bg-gray-100 border-b border-gray-300 pointer-events-auto z-[9999]">
+      <BenzeneButton />
+      <HexaneButton />
     </div>
   )
 }
