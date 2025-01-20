@@ -1,5 +1,6 @@
 import React from 'react'
-import { ChemistryButton } from './ChemistryButton'
+import { BenzeneButton } from './shapes/BenzeneButton';
+import { HexaneButton } from './shapes/HexaneButton';
 
 export function TopPanel() {
   return (
@@ -15,7 +16,8 @@ export function TopPanel() {
         zIndex:9999,
       }}
     >
-      <ChemistryButton/>
+      <BenzeneButton/>
+      <HexaneButton/>
     </div>
   )
 }

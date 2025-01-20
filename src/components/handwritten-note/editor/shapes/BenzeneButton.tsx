@@ -1,9 +1,9 @@
 import React from 'react'
 import { useEditor } from 'tldraw'
 import { AssetRecordType, createShapeId } from 'tldraw'
-import { MdHexagon } from 'react-icons/md'
+import { TbHexagonLetterO } from "react-icons/tb";
 
-export function ChemistryButton() {
+export const BenzeneButton = () => {
   const editor = useEditor()
 
   const addBenzeneRing = () => {
@@ -64,7 +64,7 @@ export function ChemistryButton() {
         }}
         onClick={addBenzeneRing}
       >
-        <MdHexagon size={20} />
+        <TbHexagonLetterO size={20} />
       </button>
     </div>
   )
