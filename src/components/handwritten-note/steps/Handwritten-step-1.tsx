@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { HandwrittenNoteType } from "../HandwrittenNoteTypes";
 import { toast } from 'sonner';
+import { EditorOptions } from '../HandwrittenNote';
 
 interface HandwrittenChooseNoteTypeProps {
-  onClose: () => void;
+  toggleIsOpened: () => void;
   allNoteTypes: HandwrittenNoteType[];
   getNoteClass: (type: HandwrittenNoteType) => string;
   noteType: HandwrittenNoteType | undefined;
   setNoteType: (newValue: HandwrittenNoteType | undefined) => void;
   setStep: (step: number) => void;
+  currentEditorOptions: EditorOptions;
+  setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void;
 }
 
 export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypeProps) => {
@@ -28,7 +31,7 @@ export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypePr
   return ReactDOM.createPortal(
     <div
       className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
-      onClick={props.onClose}
+      onClick={props.toggleIsOpened}
     >
       <div
         className="
@@ -103,7 +106,7 @@ export const HandwrittenStepChooseNoteType = (props: HandwrittenChooseNoteTypePr
           >
             <button
               className="px-5 py-2 bg-gray-300 rounded shadow hover:opacity-90"
-              onClick={props.onClose}
+              onClick={props.toggleIsOpened}
             >
               Cancel
             </button>

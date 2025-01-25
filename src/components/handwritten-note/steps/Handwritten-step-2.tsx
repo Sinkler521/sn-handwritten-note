@@ -5,31 +5,34 @@ import { HandwrittenNoteEditor } from '../editor/handwritten-note-editor'
 import { HandwrittenNoteType, getAssetLink } from "../HandwrittenNoteTypes"
 import { ResizableBox } from "react-resizable"
 import 'react-resizable/css/styles.css'
+import { EditorOptions } from '../HandwrittenNote'
 
 interface HandwrittenStepCreateNoteProps {
-  handleRestore: () => void
-  handleMinimize: () => void
-  onClose: () => void
-  windowRef: RefObject<HTMLDivElement> | null
-  isMinimized: boolean
-  isGrabbing: boolean
-  setIsGrabbing: Dispatch<SetStateAction<boolean>>
-  setMouseOffset: Dispatch<SetStateAction<{ x: number; y: number }>>
-  isFullScreen: boolean
-  toggleIsFullScreen: () => void
+  handleRestore: () => void;
+  handleMinimize: () => void;
+  toggleIsOpened: () => void;
+  windowRef: RefObject<HTMLDivElement> | null;
+  isMinimized: boolean;
+  isGrabbing: boolean;
+  setIsGrabbing: Dispatch<SetStateAction<boolean>>;
+  setMouseOffset: Dispatch<SetStateAction<{ x: number; y: number }>>;
+  isFullScreen: boolean;
+  toggleIsFullScreen: () => void;
 
-  containerStyle: React.CSSProperties
-  windowCoordinates: { x: number; y: number }
+  containerStyle: React.CSSProperties;
+  windowCoordinates: { x: number; y: number };
 
-  noteType: HandwrittenNoteType | undefined
-  shapesData: object | undefined
+  noteType: HandwrittenNoteType | undefined;
+  updateBlockProperty: (key: string, value: any) => void;
+  currentEditorOptions: EditorOptions;
+  setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void;
 }
 
 export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps) => {
   const {
     handleRestore,
     handleMinimize,
-    onClose,
+    toggleIsOpened,
     windowRef,
     isMinimized,
     isGrabbing,
@@ -40,7 +43,9 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
     containerStyle,
     windowCoordinates,
     noteType,
-    shapesData,
+    updateBlockProperty,
+    currentEditorOptions,
+    setCurrentEditorOptions,
   } = props
 
   const [assetLink, setAssetLink] = useState<string | undefined>()
@@ -106,14 +111,19 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
         </button>
         <button
           className="border-l p-1 bg-red-white transition-all hover:scale-95 hover:bg-red-600 hover:text-white cursor-pointer"
-          onClick={onClose}
+          onClick={toggleIsOpened}
         >
           <MdClose size={24} />
         </button>
       </div>
 
       <div className="flex-1 overflow-auto">
-        <HandwrittenNoteEditor assetLink={assetLink} shapesData={shapesData} />
+        <HandwrittenNoteEditor
+          assetLink={assetLink}
+          currentEditorOptions={currentEditorOptions}
+          setCurrentEditorOptions={setCurrentEditorOptions}
+          updateBlockProperty={updateBlockProperty}
+        />
       </div>
     </>
   )
@@ -127,7 +137,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
   const fullScreenWindow = (
     <div
       className="absolute inset-0 flex flex-col bg-white"
-      style={{ zIndex:99999 }} // поверх всего
+      style={{ zIndex:99999 }}
       onClick={(e) => e.stopPropagation()}
       ref={windowRef}
     >
@@ -143,7 +153,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
       minConstraints={[200, 200]}
       maxConstraints={[window.innerWidth, window.innerHeight]}
       axis="both"
-      onResize={(e, data) => {
+      onResize={(e: Event, data: any) => {
         setBoxWidth(data.size.width)
         setBoxHeight(data.size.height)
       }}
@@ -155,7 +165,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
         display: 'flex',
         flexDirection: 'column',
       }}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e: Event) => e.stopPropagation()}
     >
       <div
         ref={windowRef}

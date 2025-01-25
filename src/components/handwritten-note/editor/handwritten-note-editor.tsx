@@ -1,24 +1,30 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Tldraw,
   Editor,
   createShapeId,
   AssetRecordType,
   TLImageShape,
-} from 'tldraw'
-import "tldraw/tldraw.css"
-import { svgToImage } from "../helpers/svgToImage"
-import { TopPanel } from './TopPanel'
-import { lockImageAspectRatio } from './shapes/lockAspectRatio'
+  TLEventMapHandler,
+} from 'tldraw';
+import "tldraw/tldraw.css";
+import { EditorOptions } from '../HandwrittenNote';
+import { svgToImage } from "../helpers/svgToImage";
+import { TopPanel } from './TopPanel';
+import { lockImageAspectRatio } from './shapes/lockAspectRatio';
 
 interface HandwrittenNoteEditorProps {
-  assetLink: string | undefined
-  shapesData: object | undefined
+  assetLink: string | undefined;
+  updateBlockProperty: (key: string, value: any) => void;
+  currentEditorOptions: EditorOptions;
+  setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void;
 }
 
 export function HandwrittenNoteEditor({
   assetLink,
-  shapesData
+  currentEditorOptions,
+  setCurrentEditorOptions,
+  updateBlockProperty
 }: HandwrittenNoteEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
 
@@ -110,10 +116,47 @@ export function HandwrittenNoteEditor({
   }, [editor])
 
   useEffect(() => {
-    if (!editor || !shapesData) return
-    const shapes = JSON.parse(shapesData as string)
-    editor.createShapes(shapes)
-  }, [editor, shapesData])
+    if (!editor || !currentEditorOptions.editorData) return
+    try{
+      const shapes = JSON.parse(currentEditorOptions.editorData as string)
+      editor.createShapes(shapes)
+    } catch(e){
+      console.log('No shapes data or wrong format')
+    }
+  }, [editor, currentEditorOptions.editorData])
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleChangeEvent: TLEventMapHandler<"change"> = async () => {
+      if (!editor) return;
+
+      const shapes = editor.getCurrentPageShapes();
+      const image = await editor.getSvgString(shapes);
+      const imageString = JSON.stringify(image);
+
+      if (image !== currentEditorOptions.imageData) {
+        updateBlockProperty("editorData", JSON.stringify(shapes));
+        updateBlockProperty("imageData", imageString);
+
+        setCurrentEditorOptions({
+          ...currentEditorOptions,
+          editorData: shapes,
+          imageData: image,
+        })
+        console.log(shapes, 'shapes !!!!!!!')
+      }
+    };
+
+    const cleanupFunction = editor.store.listen(handleChangeEvent, {
+      source: "user",
+      scope: "all",
+    });
+
+    return () => {
+      cleanupFunction();
+    };
+  }, [editor, currentEditorOptions.imageData]);
 
   useEffect(() => {
     if (!editor) return
