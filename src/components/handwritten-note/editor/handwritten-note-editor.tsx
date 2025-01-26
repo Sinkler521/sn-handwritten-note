@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Tldraw,
   Editor,
@@ -6,18 +6,18 @@ import {
   AssetRecordType,
   TLImageShape,
   TLEventMapHandler,
-} from 'tldraw';
-import "tldraw/tldraw.css";
-import { EditorOptions } from '../HandwrittenNote';
-import { svgToImage } from "../helpers/svgToImage";
-import { TopPanel } from './TopPanel';
-import { lockImageAspectRatio } from './shapes/lockAspectRatio';
+} from 'tldraw'
+import "tldraw/tldraw.css"
+import { EditorOptions } from '../HandwrittenNote'
+import { svgToImage } from "../helpers/svgToImage"
+import { TopPanel } from './TopPanel'
+import { lockImageAspectRatio } from './shapes/lockAspectRatio'
 
 interface HandwrittenNoteEditorProps {
-  assetLink: string | undefined;
-  updateBlockProperty: (key: string, value: any) => void;
-  currentEditorOptions: EditorOptions;
-  setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void;
+  assetLink: string | undefined
+  updateBlockProperty: (key: string, value: any) => void
+  currentEditorOptions: EditorOptions
+  setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void
 }
 
 export function HandwrittenNoteEditor({
@@ -28,15 +28,19 @@ export function HandwrittenNoteEditor({
 }: HandwrittenNoteEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
 
+  // Реф на контейнер, где будет лежать Tldraw
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const handleMount = useCallback((editorInstance: Editor) => {
     setEditor(editorInstance)
   }, [])
 
+  // Загружаем фон (SVG) и создаём шейп
   useEffect(() => {
-    if (!editor || !assetLink) return
+    if (!editor || !assetLink || !containerRef.current) return
 
-    const windowW = window.innerWidth
-    const windowH = window.innerHeight
+    const { width } = containerRef.current.getBoundingClientRect()
+    const side = width // Делаем фон квадратным
 
     const run = async () => {
       const res = await fetch(assetLink)
@@ -45,9 +49,11 @@ export function HandwrittenNoteEditor({
       }
       const svgText = await res.text()
 
-      const finalImg = await svgToImage(svgText, windowW, windowH)
+      // Генерируем изображение из SVG, задавая ему размер side x side
+      const finalImg = await svgToImage(svgText, side, side)
       if (!editor) return
 
+      // Создаём asset
       const assetId = AssetRecordType.createId()
       editor.createAssets([
         {
@@ -56,8 +62,8 @@ export function HandwrittenNoteEditor({
           type: 'image',
           meta: {},
           props: {
-            w: windowW,
-            h: windowH,
+            w: side,
+            h: side,
             mimeType: 'image/png',
             src: finalImg.src,
             name: 'paper-squared',
@@ -66,8 +72,10 @@ export function HandwrittenNoteEditor({
         },
       ])
 
+      // Создаём шейп-картинку (фон)
       const shapeId = createShapeId()
       const pageId = editor.getCurrentPageId()
+
       editor.createShape<TLImageShape>({
         id: shapeId,
         type: 'image',
@@ -76,8 +84,8 @@ export function HandwrittenNoteEditor({
         y: 0,
         isLocked: true,
         props: {
-          w: windowW,
-          h: windowH,
+          w: side,
+          h: side,
           assetId,
         },
       })
@@ -91,21 +99,25 @@ export function HandwrittenNoteEditor({
     })
   }, [editor, assetLink])
 
+  // Задаём квадратную область для камеры
   useEffect(() => {
-    if (!editor) return
-    const w = window.innerWidth
-    const h = window.innerHeight
+    if (!editor || !containerRef.current) return
+
+    const { width } = containerRef.current.getBoundingClientRect()
+    const side = width
 
     editor.setCameraOptions({
       constraints: {
         initialZoom: 'fit-max',
         baseZoom: 'default',
-        bounds: { x: 0, y: 0, w, h },
+        bounds: { x: 0, y: 0, w: side, h: side }, // квадратная область
         padding: { x: 0, y: 0 },
         origin: { x: 0, y: 0 },
         behavior: 'contain',
       },
-      isLocked: true,
+      // Оставляем isLocked = false, чтобы пользователь мог панировать (двигаться),
+      // но по горизонтали "contain" не даст выходить за рамку.
+      isLocked: false,
     })
 
     try {
@@ -115,49 +127,51 @@ export function HandwrittenNoteEditor({
     }
   }, [editor])
 
+  // Если есть сохранённые шейпы, восстанавливаем их
   useEffect(() => {
     if (!editor || !currentEditorOptions.editorData) return
-    try{
+    try {
       const shapes = JSON.parse(currentEditorOptions.editorData as string)
       editor.createShapes(shapes)
-    } catch(e){
+    } catch (e) {
       console.log('No shapes data or wrong format')
     }
   }, [editor, currentEditorOptions.editorData])
 
+  // Отслеживаем изменения в редакторе
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) return
 
     const handleChangeEvent: TLEventMapHandler<"change"> = async () => {
-      if (!editor) return;
+      if (!editor) return
 
-      const shapes = editor.getCurrentPageShapes();
-      const image = await editor.getSvgString(shapes);
-      const imageString = JSON.stringify(image);
+      const shapes = editor.getCurrentPageShapes()
+      const image = await editor.getSvgString(shapes)
+      const imageString = JSON.stringify(image)
 
       if (image !== currentEditorOptions.imageData) {
-        updateBlockProperty("editorData", JSON.stringify(shapes));
-        updateBlockProperty("imageData", imageString);
+        updateBlockProperty("editorData", JSON.stringify(shapes))
+        updateBlockProperty("imageData", imageString)
 
         setCurrentEditorOptions({
           ...currentEditorOptions,
           editorData: shapes,
           imageData: image,
         })
-        console.log(shapes, 'shapes !!!!!!!')
       }
-    };
+    }
 
     const cleanupFunction = editor.store.listen(handleChangeEvent, {
       source: "user",
       scope: "all",
-    });
+    })
 
     return () => {
-      cleanupFunction();
-    };
-  }, [editor, currentEditorOptions.imageData]);
+      cleanupFunction()
+    }
+  }, [editor, currentEditorOptions.imageData])
 
+  // Если нужно фиксировать пропорции вставленных изображений
   useEffect(() => {
     if (!editor) return
     const removeLockAspect = lockImageAspectRatio(editor)
@@ -167,7 +181,7 @@ export function HandwrittenNoteEditor({
   }, [editor])
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
       <Tldraw
         onMount={handleMount}
         forceMobile

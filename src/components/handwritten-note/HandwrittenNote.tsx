@@ -153,7 +153,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   if (!isOpened){
     return (
       <>
-        <div className="flex justify-center items-center border rounded-md shadow-md cursor-pointer"
+        <div className="flex justify-center items-center border rounded-md shadow-md bg-white cursor-pointer"
           style={{
             width: `${currentEditorOptions.imageWidth}px`,
             height: `${currentEditorOptions.imageHeight}px`
