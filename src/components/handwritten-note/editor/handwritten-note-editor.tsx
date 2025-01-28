@@ -27,6 +27,7 @@ interface MyEditorData {
 
 interface HandwrittenNoteEditorProps {
   assetLink: string | undefined
+  updateBlockProperty: (key: string, value: any) => void
   currentEditorOptions: EditorOptions
   setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void
 }
@@ -34,7 +35,7 @@ interface HandwrittenNoteEditorProps {
 export function HandwrittenNoteEditor({
   assetLink,
   currentEditorOptions,
-  setCurrentEditorOptions,
+  setCurrentEditorOptions
 }: HandwrittenNoteEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -43,14 +44,13 @@ export function HandwrittenNoteEditor({
     setEditor(editorInstance)
   }, [])
 
-  function getParsedEditorData(): MyEditorData {
+  function parseEditorData(): MyEditorData {
     const raw = currentEditorOptions.editorData
     if (!raw) return {}
     if (typeof raw === 'string') {
       try {
         return JSON.parse(raw)
-      } catch (err) {
-        console.warn('Wrong JSON format in editorData:', err)
+      } catch {
         return {}
       }
     }
@@ -59,78 +59,55 @@ export function HandwrittenNoteEditor({
 
   useEffect(() => {
     if (!editor || !containerRef.current) return
-    const { width } = containerRef.current.getBoundingClientRect()
 
-    editor.setCameraOptions({
-      constraints: {
-        initialZoom: 'fit-max',
-        baseZoom: 'default',
-        bounds: { x: 0, y: 0, w: width, h: width },
-        padding: { x: 0, y: 0 },
-        origin: { x: 0, y: 0 },
-        behavior: 'contain',
-      },
-      isLocked: false,
-    })
-
-    editor.setCamera({ x: 0, y: 0, zoom: 1 })
-  }, [editor])
-
-  useEffect(() => {
-    if (!editor || !assetLink || !containerRef.current) return
-
+    const data = parseEditorData()
     const { width } = containerRef.current.getBoundingClientRect()
     const side = width
-    const data = getParsedEditorData()
-    if (data.background) {
-      const bg = data.background
 
-      const assetRecord: AssetRecordType = {
-        id: bg.assetId,
-        typeName: 'asset',
-        type: 'image',
-        meta: {},
-        props: {
-          w: bg.w,
-          h: bg.h,
-          mimeType: 'image/png',
-          src: '',
-          name: 'paper',
-          isAnimated: false,
-        },
-      }
-      editor.createAssets([assetRecord])
+    async function loadEverything() {
+      let bgShapeId: string | undefined
 
-      editor.createShape<TLImageShape>({
-        id: bg.shapeId,
-        type: 'image',
-        parentId: editor.getCurrentPageId(),
-        x: 0,
-        y: 0,
-        isLocked: true,
-        props: {
-          w: bg.w,
-          h: bg.h,
-          assetId: bg.assetId,
-        },
-      })
-
-      editor.sendToBack([{ id: bg.shapeId, type: 'shape' }])
-      return
-    }
-
-    if (!currentEditorOptions.isEverChanged) {
-      ;(async () => {
+      if (data.background) {
+        const bg = data.background
+        editor.createAssets([
+          {
+            id: bg.assetId,
+            typeName: 'asset',
+            type: 'image',
+            meta: {},
+            props: {
+              w: bg.w,
+              h: bg.h,
+              mimeType: 'image/png',
+              src: '',
+              name: 'paper-background',
+              isAnimated: false,
+            },
+          },
+        ])
+        editor.createShape<TLImageShape>({
+          id: bg.shapeId,
+          type: 'image',
+          parentId: editor.getCurrentPageId(),
+          x: 0,
+          y: 0,
+          isLocked: true,
+          props: {
+            w: bg.w,
+            h: bg.h,
+            assetId: bg.assetId,
+          },
+        })
+        bgShapeId = bg.shapeId
+        editor.sendToBack([{ id: bg.shapeId, type: 'shape' }])
+      } else if (!currentEditorOptions.isEverChanged && assetLink) {
         try {
           const res = await fetch(assetLink)
           if (!res.ok) {
             throw new Error(`Failed to fetch SVG: ${res.status}`)
           }
           const svgText = await res.text()
-
           const finalImg = await svgToImage(svgText, side, side)
-          if (!editor) return
-
           const assetId = AssetRecordType.createId()
           editor.createAssets([
             {
@@ -148,7 +125,6 @@ export function HandwrittenNoteEditor({
               },
             },
           ])
-
           const shapeId = createShapeId()
           editor.createShape<TLImageShape>({
             id: shapeId,
@@ -163,12 +139,11 @@ export function HandwrittenNoteEditor({
               assetId,
             },
           })
-
+          bgShapeId = shapeId
           editor.sendToBack([{ id: shapeId, type: 'shape' }])
 
-          const oldData = getParsedEditorData()
           const newData: MyEditorData = {
-            ...oldData,
+            ...data,
             background: {
               shapeId,
               assetId,
@@ -182,78 +157,88 @@ export function HandwrittenNoteEditor({
             isEverChanged: true,
           })
         } catch (err) {
-          console.error("loadBackground error:", err)
+          console.error('loadBackground error:', err)
         }
-      })()
+      }
+
+      if (data.assets && data.assets.length > 0) {
+        editor.createAssets(data.assets)
+      }
+
+      if (data.shapes && data.shapes.length > 0) {
+        editor.createShapes(data.shapes)
+      }
+
+      if (bgShapeId) {
+        editor.sendToBack([{ id: bgShapeId, type: 'shape' }])
+      }
     }
-  }, [editor, assetLink])
+
+    loadEverything()
+  }, [editor, containerRef])
+
+  useEffect(() => {
+    if (!editor || !containerRef.current) return
+    const { width } = containerRef.current.getBoundingClientRect()
+    const side = width
+    editor.setCameraOptions({
+      constraints: {
+        initialZoom: 'fit-max',
+        baseZoom: 'default',
+        bounds: { x: 0, y: 0, w: side, h: side },
+        padding: { x: 0, y: 0 },
+        origin: { x: 0, y: 0 },
+        behavior: 'contain',
+      },
+      isLocked: false,
+    })
+    try {
+      editor.setCamera({ x: 0, y: 0, zoom: 1 })
+    } catch {}
+  }, [editor])
 
   useEffect(() => {
     if (!editor) return
-    const data = getParsedEditorData()
-    if (data.assets && data.assets.length > 0) {
-      editor.createAssets(data.assets)
-    }
-
-    if (data.shapes && data.shapes.length > 0) {
-      editor.createShapes(data.shapes)
-    }
-  }, [editor, currentEditorOptions.editorData])
-
-  useEffect(() => {
-    if (!editor) return
-
     const handleChangeEvent: TLEventMapHandler<"change"> = async () => {
       if (!editor) return
-
       const shapes = editor.getCurrentPageShapes()
-
-      const assetsToSave: AssetRecordType[] = []
-      const usedAssetIds = new Set<string>()
-
+      const svgStr = await editor.getSvgString(shapes)
+      let parsedData: MyEditorData = parseEditorData()
+      const usedAssets: AssetRecordType[] = []
+      const usedIds = new Set<string>()
       for (const shape of shapes) {
         if (shape.type === 'image') {
           const img = shape as TLImageShape
           if (img.props.assetId) {
-            usedAssetIds.add(img.props.assetId)
+            usedIds.add(img.props.assetId)
           }
         }
       }
-      for (const assetId of usedAssetIds) {
-        const record = editor.store.get(assetId)
-        if (record && record.typeName === 'asset') {
-          assetsToSave.push(record as AssetRecordType)
+      for (const id of usedIds) {
+        const rec = editor.store.get(id)
+        if (rec && rec.typeName === 'asset') {
+          usedAssets.push(rec as AssetRecordType)
         }
       }
-
-      const image = await editor.getSvgString(shapes)
-
-      const oldData = getParsedEditorData()
-
-      const background = oldData.background
-
       const newData: MyEditorData = {
-        background,   
-        assets: assetsToSave,
+        background: parsedData.background,
+        assets: usedAssets,
         shapes,
       }
-
-      if (image !== currentEditorOptions.imageData) {
+      if (svgStr !== currentEditorOptions.imageData) {
         setCurrentEditorOptions({
           ...currentEditorOptions,
           editorData: newData,
-          imageData: image,
+          imageData: svgStr,
         })
       }
     }
-
-    const cleanupFunction = editor.store.listen(handleChangeEvent, {
-      source: "user",
-      scope: "all",
+    const stop = editor.store.listen(handleChangeEvent, {
+      source: 'user',
+      scope: 'all',
     })
-
     return () => {
-      cleanupFunction()
+      stop()
     }
   }, [editor, currentEditorOptions.imageData])
 
@@ -271,7 +256,7 @@ export function HandwrittenNoteEditor({
         onMount={handleMount}
         forceMobile
         components={{
-          TopPanel: TopPanel,
+          TopPanel
         }}
       />
     </div>
