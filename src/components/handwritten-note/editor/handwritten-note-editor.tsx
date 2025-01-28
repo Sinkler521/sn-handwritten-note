@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Tldraw,
   Editor,
@@ -15,9 +14,19 @@ import { svgToImage } from "../helpers/svgToImage"
 import { TopPanel } from './TopPanel'
 import { lockImageAspectRatio } from './shapes/lockAspectRatio'
 
+interface MyEditorData {
+  background?: {
+    shapeId: string
+    assetId: string
+    w: number
+    h: number
+  }
+  assets?: AssetRecordType[]
+  shapes?: TLShape[]
+}
+
 interface HandwrittenNoteEditorProps {
   assetLink: string | undefined
-  updateBlockProperty: (key: string, value: any) => void
   currentEditorOptions: EditorOptions
   setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void
 }
@@ -26,87 +35,37 @@ export function HandwrittenNoteEditor({
   assetLink,
   currentEditorOptions,
   setCurrentEditorOptions,
-  updateBlockProperty
 }: HandwrittenNoteEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
-
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleMount = useCallback((editorInstance: Editor) => {
     setEditor(editorInstance)
   }, [])
 
-  useEffect(() => {
-    if (!editor || !assetLink || !containerRef.current) return
-
-    const { width } = containerRef.current.getBoundingClientRect()
-    const side = width
-
-    const run = async () => {
-      const res = await fetch(assetLink)
-      if (!res.ok) {
-        throw new Error(`Failed to fetch SVG: ${res.status}`)
+  function getParsedEditorData(): MyEditorData {
+    const raw = currentEditorOptions.editorData
+    if (!raw) return {}
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw)
+      } catch (err) {
+        console.warn('Wrong JSON format in editorData:', err)
+        return {}
       }
-      const svgText = await res.text()
-
-      const finalImg = await svgToImage(svgText, side, side)
-      if (!editor) return
-
-      const assetId = AssetRecordType.createId()
-      editor.createAssets([
-        {
-          id: assetId,
-          typeName: 'asset',
-          type: 'image',
-          meta: {},
-          props: {
-            w: side,
-            h: side,
-            mimeType: 'image/png',
-            src: finalImg.src,
-            name: 'paper-squared',
-            isAnimated: false,
-          },
-        },
-      ])
-
-      const shapeId = createShapeId()
-      const pageId = editor.getCurrentPageId()
-
-      editor.createShape<TLImageShape>({
-        id: shapeId,
-        type: 'image',
-        parentId: pageId,
-        x: 0,
-        y: 0,
-        isLocked: true,
-        props: {
-          w: side,
-          h: side,
-          assetId,
-        },
-      })
-
-      editor.sendToBack([{ id: shapeId, type: 'shape' }])
-      editor.clearHistory()
     }
-
-    run().catch(err => {
-      console.error("loadBackground error:", err)
-    })
-  }, [editor, assetLink])
+    return raw as MyEditorData
+  }
 
   useEffect(() => {
     if (!editor || !containerRef.current) return
-
     const { width } = containerRef.current.getBoundingClientRect()
-    const side = width
 
     editor.setCameraOptions({
       constraints: {
         initialZoom: 'fit-max',
         baseZoom: 'default',
-        bounds: { x: 0, y: 0, w: side, h: side },
+        bounds: { x: 0, y: 0, w: width, h: width },
         padding: { x: 0, y: 0 },
         origin: { x: 0, y: 0 },
         behavior: 'contain',
@@ -114,34 +73,130 @@ export function HandwrittenNoteEditor({
       isLocked: false,
     })
 
-    try {
-      editor.setCamera({ x: 0, y: 0, zoom: 1 })
-    } catch (e) {
-      console.error("Error setting camera:", e)
-    }
+    editor.setCamera({ x: 0, y: 0, zoom: 1 })
   }, [editor])
 
   useEffect(() => {
-    if (!editor || !currentEditorOptions.editorData) return
-  
-    let shapes: TLShape[]
-  
-    // Проверяем тип editorData
-    if (typeof currentEditorOptions.editorData === 'string') {
-      try {
-        shapes = JSON.parse(currentEditorOptions.editorData)
-      } catch (e) {
-        console.log('No shapes data or wrong format:', e)
-        return
+    if (!editor || !assetLink || !containerRef.current) return
+
+    const { width } = containerRef.current.getBoundingClientRect()
+    const side = width
+    const data = getParsedEditorData()
+    if (data.background) {
+      const bg = data.background
+
+      const assetRecord: AssetRecordType = {
+        id: bg.assetId,
+        typeName: 'asset',
+        type: 'image',
+        meta: {},
+        props: {
+          w: bg.w,
+          h: bg.h,
+          mimeType: 'image/png',
+          src: '',
+          name: 'paper',
+          isAnimated: false,
+        },
       }
-    } else {
-      shapes = currentEditorOptions.editorData
+      editor.createAssets([assetRecord])
+
+      editor.createShape<TLImageShape>({
+        id: bg.shapeId,
+        type: 'image',
+        parentId: editor.getCurrentPageId(),
+        x: 0,
+        y: 0,
+        isLocked: true,
+        props: {
+          w: bg.w,
+          h: bg.h,
+          assetId: bg.assetId,
+        },
+      })
+
+      editor.sendToBack([{ id: bg.shapeId, type: 'shape' }])
+      return
     }
-  
-    if (Array.isArray(shapes)) {
-      editor.createShapes(shapes)
-    } else {
-      console.log('No shapes data or wrong format: not an array')
+
+    if (!currentEditorOptions.isEverChanged) {
+      ;(async () => {
+        try {
+          const res = await fetch(assetLink)
+          if (!res.ok) {
+            throw new Error(`Failed to fetch SVG: ${res.status}`)
+          }
+          const svgText = await res.text()
+
+          const finalImg = await svgToImage(svgText, side, side)
+          if (!editor) return
+
+          const assetId = AssetRecordType.createId()
+          editor.createAssets([
+            {
+              id: assetId,
+              typeName: 'asset',
+              type: 'image',
+              meta: {},
+              props: {
+                w: side,
+                h: side,
+                mimeType: 'image/png',
+                src: finalImg.src,
+                name: 'paper-squared',
+                isAnimated: false,
+              },
+            },
+          ])
+
+          const shapeId = createShapeId()
+          editor.createShape<TLImageShape>({
+            id: shapeId,
+            type: 'image',
+            parentId: editor.getCurrentPageId(),
+            x: 0,
+            y: 0,
+            isLocked: true,
+            props: {
+              w: side,
+              h: side,
+              assetId,
+            },
+          })
+
+          editor.sendToBack([{ id: shapeId, type: 'shape' }])
+
+          const oldData = getParsedEditorData()
+          const newData: MyEditorData = {
+            ...oldData,
+            background: {
+              shapeId,
+              assetId,
+              w: side,
+              h: side,
+            },
+          }
+          setCurrentEditorOptions({
+            ...currentEditorOptions,
+            editorData: newData,
+            isEverChanged: true,
+          })
+        } catch (err) {
+          console.error("loadBackground error:", err)
+        }
+      })()
+    }
+  }, [editor, assetLink])
+
+  useEffect(() => {
+    if (!editor) return
+    const data = getParsedEditorData()
+    if (data.assets && data.assets.length > 0) {
+      editor.createAssets(data.assets)
+    }
+
+    if (data.shapes && data.shapes.length > 0) {
+      editor.createShapes(data.shapes)
     }
   }, [editor, currentEditorOptions.editorData])
 
@@ -152,12 +207,41 @@ export function HandwrittenNoteEditor({
       if (!editor) return
 
       const shapes = editor.getCurrentPageShapes()
+
+      const assetsToSave: AssetRecordType[] = []
+      const usedAssetIds = new Set<string>()
+
+      for (const shape of shapes) {
+        if (shape.type === 'image') {
+          const img = shape as TLImageShape
+          if (img.props.assetId) {
+            usedAssetIds.add(img.props.assetId)
+          }
+        }
+      }
+      for (const assetId of usedAssetIds) {
+        const record = editor.store.get(assetId)
+        if (record && record.typeName === 'asset') {
+          assetsToSave.push(record as AssetRecordType)
+        }
+      }
+
       const image = await editor.getSvgString(shapes)
+
+      const oldData = getParsedEditorData()
+
+      const background = oldData.background
+
+      const newData: MyEditorData = {
+        background,   
+        assets: assetsToSave,
+        shapes,
+      }
 
       if (image !== currentEditorOptions.imageData) {
         setCurrentEditorOptions({
           ...currentEditorOptions,
-          editorData: shapes,
+          editorData: newData,
           imageData: image,
         })
       }
