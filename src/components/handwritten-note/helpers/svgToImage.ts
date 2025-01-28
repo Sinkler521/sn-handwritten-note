@@ -3,37 +3,45 @@ export async function svgToImage(
     outWidth: number,
     outHeight: number
   ): Promise<HTMLImageElement> {
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-  
-    return new Promise((resolve, reject) => {
-      const svgImg = new Image();
-      svgImg.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = outWidth;
-        canvas.height = outHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Canvas 2D context is not available"));
-          return;
-        }
+    try{
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
 
-        const tileW = svgImg.width;
-        const tileH = svgImg.height;
-        for (let y = 0; y < outHeight; y += tileH) {
-          for (let x = 0; x < outWidth; x += tileW) {
-            ctx.drawImage(svgImg, x, y, tileW, tileH);
+      return new Promise((resolve, reject) => {
+        const svgImg = new Image();
+        svgImg.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = outWidth;
+          canvas.height = outHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas 2D context is not available"));
+            return;
           }
-        }
-        const finalImg = new Image();
-        finalImg.onload = () => {
-          URL.revokeObjectURL(url);
-          resolve(finalImg);
+  
+          const tileW = svgImg.width;
+          const tileH = svgImg.height;
+          for (let y = 0; y < outHeight; y += tileH) {
+            for (let x = 0; x < outWidth; x += tileW) {
+              ctx.drawImage(svgImg, x, y, tileW, tileH);
+            }
+          }
+          const finalImg = new Image();
+          finalImg.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(finalImg);
+          };
+          finalImg.onerror = reject;
+          finalImg.src = canvas.toDataURL("image/png");
         };
-        finalImg.onerror = reject;
-        finalImg.src = canvas.toDataURL("image/png");
-      };
-      svgImg.onerror = reject;
-      svgImg.src = url;
-    });
+        svgImg.onerror = (error) => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Failed to load SVG: ${error}`));
+        };
+        svgImg.src = url;
+      });
+    } catch(error){
+      console.error('SVG conversion error:', error);
+      throw new Error('Failed to process SVG image');
+    }
   }

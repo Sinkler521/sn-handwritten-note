@@ -25,6 +25,7 @@ interface HandwrittenStepCreateNoteProps {
   noteType: HandwrittenNoteType | undefined;
   updateBlockProperty: (key: string, value: any) => void;
   currentEditorOptions: EditorOptions;
+  handleSave: () => void;
   setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void;
 }
 
@@ -46,6 +47,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
     updateBlockProperty,
     currentEditorOptions,
     setCurrentEditorOptions,
+    handleSave
   } = props
 
   const [assetLink, setAssetLink] = useState<string | undefined>()
@@ -111,7 +113,10 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
         </button>
         <button
           className="border-l p-1 bg-red-white transition-all hover:scale-95 hover:bg-red-600 hover:text-white cursor-pointer"
-          onClick={toggleIsOpened}
+          onClick={() => {
+            handleSave();
+            toggleIsOpened();
+          }}
         >
           <MdClose size={24} />
         </button>

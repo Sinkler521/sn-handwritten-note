@@ -2,6 +2,7 @@ import React, {
   useState,
   useRef,
   useEffect,
+  useMemo,
   useCallback,
   CSSProperties,
 } from 'react';
@@ -13,6 +14,7 @@ import {
 import { stringToNoteType } from './helpers/helpers';
 import { HandwrittenStepCreateNote } from "./steps/Handwritten-step-2";
 import { HandwrittenStepChooseNoteType } from "./steps/Handwritten-step-1";
+import DOMPurify from 'dompurify';
 import { TLShape } from 'tldraw';
 import './handwritten-note-styles.css';
 
@@ -23,7 +25,7 @@ export interface EditorOptions {
   imageHeight: number | string;
 
   editorData?: TLShape[] | string | undefined;
-  imageData?: { height: number; svg: string; width: number; } | string | undefined;
+  imageData?: { height: number; svg: string; width: number; } | undefined;
 }
 
 interface HandwrittenNoteProps {
@@ -49,8 +51,8 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     imageWidth: editorOptions.imageWidth ? editorOptions.imageWidth : 250,
     imageHeight: editorOptions.imageHeight ? editorOptions.imageHeight : 250,
 
-    editorData: editorOptions.editorData ? editorOptions.editorData : undefined,
-    imageData: editorOptions.imageData ? editorOptions.imageData : undefined,
+    editorData: editorOptions.editorData ? JSON.parse(editorOptions.editorData) : undefined,
+    imageData: editorOptions.imageData ? JSON.parse(editorOptions.imageData) : undefined,
   })
 
   const [currentPreviewDimensions, setCurrentPreviewDimensions] = useState<object | undefined>({x: 250, y: 250})
@@ -62,17 +64,34 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
   const [savedCoordinates, setSavedCoordinates] = useState<{ x: number; y: number } | null>(null);
   const [backToFullScreen, setBackToFullScreen] = useState<boolean>(false);
 
+  let left: number | string = windowCoordinates.x;
+  let top: number | string = windowCoordinates.y;
+  let width: number | string = '50vw';
+  let height: number | string = 'calc(50vw * (2 / 3))';
+
+  if (isFullScreen) {
+    left = 0;
+    top = 0;
+    width = '100vw';
+    height = '100vh';
+  } else if (isMinimized) {
+    left = 'calc(100vw - 60px)';
+    top = 'calc(100vh - 180px)';
+    width = '40px';
+    height = '40px';
+  }
+
+  const containerStyle: CSSProperties = useMemo(() => ({
+    position: 'absolute',
+    left,
+    top,
+    width,
+    height,
+  }), [left, top, width, height]);
+
   useEffect(() => {
     if(editorOptions){
       setCurrentPreviewDimensions({x: editorOptions.imageWidth, y: editorOptions.imageHeight});
-      if(editorOptions.editorData){
-        const shapes = JSON.parse(editorOptions.editorData);
-        setCurrentEditorOptions({...currentEditorOptions, editorData: shapes})
-      }
-      if(editorOptions.imageData){
-        const data = JSON.parse(editorOptions.imageData);
-        setCurrentEditorOptions({...currentEditorOptions, imageData: data})
-      }
     }
   }, [editorOptions])
 
@@ -150,6 +169,18 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
     }
   };
 
+  const handleSave = () => {
+    if(currentEditorOptions){
+       const editorDataString = JSON.stringify(currentEditorOptions.editorData);
+       const imageDataString = JSON.stringify(currentEditorOptions.imageData)
+       updateBlockProperty('editorOptions', {
+        ...currentEditorOptions,
+        editorData: editorDataString,
+        imageData: imageDataString,
+      })
+    }
+  }
+
   if (!isOpened){
     return (
       <>
@@ -159,26 +190,22 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
             height: `${currentEditorOptions.imageHeight}px`
           }}
         >
-          {
-            currentEditorOptions.imageData
-            ?
-            <>
-              <div
-                dangerouslySetInnerHTML={{ __html: currentEditorOptions.imageData.svg }}
-                className={`w-full h-full rounded-md`}
-                onClick={toggleIsOpened}
-              />
-            </>
-            :
-            <>
-              <img 
-                src={"/assets/images/default-image.jpg"}
-                alt="image"
-                className={`w-full h-full rounded-md cursor-pointer`}
-                onClick={toggleIsOpened}
-              />
-            </>
-          }
+          {currentEditorOptions.imageData ? (
+            <div
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(currentEditorOptions.imageData.svg) 
+              }}
+              className="w-full h-full rounded-md"
+              onClick={toggleIsOpened}
+            />
+          ) : (
+            <img 
+              src="/assets/images/default-image.jpg"
+              alt="Handwritten note preview"
+              className="w-full h-full rounded-md cursor-pointer"
+              onClick={toggleIsOpened}
+            />
+          )}
         </div>
       </>
     )
@@ -198,31 +225,6 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
       />
     );
   }
-
-  let left: number | string = windowCoordinates.x;
-  let top: number | string = windowCoordinates.y;
-  let width: number | string = '50vw';
-  let height: number | string = 'calc(50vw * (2 / 3))';
-
-  if (isFullScreen) {
-    left = 0;
-    top = 0;
-    width = '100vw';
-    height = '100vh';
-  } else if (isMinimized) {
-    left = 'calc(100vw - 60px)';
-    top = 'calc(100vh - 180px)';
-    width = '40px';
-    height = '40px';
-  }
-
-  const containerStyle: CSSProperties = {
-    position: 'absolute',
-    left,
-    top,
-    width,
-    height,
-  };
 
   return (
     <>
@@ -244,6 +246,7 @@ export const HandwrittenNote: React.FC<HandwrittenNoteProps> = ({
         currentEditorOptions={currentEditorOptions}
         setCurrentEditorOptions={setCurrentEditorOptions}
         updateBlockProperty={updateBlockProperty}
+        handleSave={handleSave}
       />
     </>
   )

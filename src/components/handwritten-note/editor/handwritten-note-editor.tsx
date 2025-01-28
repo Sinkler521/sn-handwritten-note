@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 import {
   Tldraw,
   Editor,
@@ -6,6 +7,7 @@ import {
   AssetRecordType,
   TLImageShape,
   TLEventMapHandler,
+  TLShape
 } from 'tldraw'
 import "tldraw/tldraw.css"
 import { EditorOptions } from '../HandwrittenNote'
@@ -121,11 +123,25 @@ export function HandwrittenNoteEditor({
 
   useEffect(() => {
     if (!editor || !currentEditorOptions.editorData) return
-    try {
-      const shapes = JSON.parse(currentEditorOptions.editorData as string)
+  
+    let shapes: TLShape[]
+  
+    // Проверяем тип editorData
+    if (typeof currentEditorOptions.editorData === 'string') {
+      try {
+        shapes = JSON.parse(currentEditorOptions.editorData)
+      } catch (e) {
+        console.log('No shapes data or wrong format:', e)
+        return
+      }
+    } else {
+      shapes = currentEditorOptions.editorData
+    }
+  
+    if (Array.isArray(shapes)) {
       editor.createShapes(shapes)
-    } catch (e) {
-      console.log('No shapes data or wrong format')
+    } else {
+      console.log('No shapes data or wrong format: not an array')
     }
   }, [editor, currentEditorOptions.editorData])
 
@@ -137,12 +153,8 @@ export function HandwrittenNoteEditor({
 
       const shapes = editor.getCurrentPageShapes()
       const image = await editor.getSvgString(shapes)
-      const imageString = JSON.stringify(image)
 
       if (image !== currentEditorOptions.imageData) {
-        updateBlockProperty("editorData", JSON.stringify(shapes))
-        updateBlockProperty("imageData", imageString)
-
         setCurrentEditorOptions({
           ...currentEditorOptions,
           editorData: shapes,
