@@ -37,6 +37,17 @@ export function HandwrittenNoteEditor({
   currentEditorOptions,
   setCurrentEditorOptions
 }: HandwrittenNoteEditorProps) {
+
+  // 1) Определяем размеры окна (монитора)
+  const windowParams = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }
+
+  // 2) normalEditorParams вычисляем сразу после того, как редактор (или его контейнер)
+  // отрендерился и мы можем взять getBoundingClientRect().
+  const [normalEditorParams, setNormalEditorParams] = useState<{ width: number; height: number } | null>(null)
+
   const [editor, setEditor] = useState<Editor | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -56,6 +67,77 @@ export function HandwrittenNoteEditor({
     }
     return raw as MyEditorData
   }
+
+  // 3) После первого рендера узнаем реальные "нормальные" размеры контейнера
+  useEffect(() => {
+    if (containerRef.current && !normalEditorParams) {
+      const { width, height } = containerRef.current.getBoundingClientRect()
+      setNormalEditorParams({ width, height })
+    }
+  }, [normalEditorParams])
+
+  useEffect(() => {
+    if (!editor || !normalEditorParams) return;
+  
+    let timer: NodeJS.Timeout | null = null;
+  
+    const handleResize = () => {
+      const container = editor.getContainer();
+      if (!container) return;
+  
+      let { width, height } = container.getBoundingClientRect();
+      width = Math.floor(width);
+      height = Math.floor(height);
+  
+      const [normalWidth, normalHeight] = [normalEditorParams.width, normalEditorParams.height];
+      const [maxWidth, maxHeight] = [windowParams.width, windowParams.height];
+  
+      const minZoom = 1;
+      const maxZoom = 2.75;
+  
+      const currentZoom = editor.getZoomLevel();
+      
+      let ratioW: number;
+      if (width <= normalWidth) {
+        ratioW = minZoom;
+      } else if (width >= maxWidth) {
+        ratioW = maxZoom;
+      } else {
+        const deltaW = (width - normalWidth) / (maxWidth - normalWidth);
+        ratioW = minZoom + deltaW * (maxZoom - minZoom);
+      }
+  
+      let ratioH: number;
+      if (height <= normalHeight) {
+        ratioH = minZoom;
+      } else if (height >= maxHeight) {
+        ratioH = maxZoom;
+      } else {
+        const deltaH = (height - normalHeight) / (maxHeight - normalHeight);
+        ratioH = minZoom + deltaH * (maxZoom - minZoom);
+      }
+
+      let targetZoom = Math.max(ratioW, ratioH);
+  
+      const diff = Math.abs(targetZoom - currentZoom);
+      if (diff < 0.01) return;
+  
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        editor.setCamera({ x: 0, y: 0, z: targetZoom });
+      }, 100);
+    };
+  
+    const stop = editor.store.listen(() => handleResize(), {
+      source: 'user',
+      scope: 'all',
+    });
+  
+    return () => {
+      if (timer) clearTimeout(timer);
+      stop();
+    };
+  }, [editor, normalEditorParams]);
 
   useEffect(() => {
     if (!editor || !containerRef.current) return
@@ -180,12 +262,11 @@ export function HandwrittenNoteEditor({
   useEffect(() => {
     if (!editor || !containerRef.current) return
     const { width } = containerRef.current.getBoundingClientRect()
-    const side = width
     editor.setCameraOptions({
       constraints: {
         initialZoom: 'fit-max',
         baseZoom: 'default',
-        bounds: { x: 0, y: 0, w: side, h: side },
+        bounds: { x: 0, y: 0, w: width, h: width },
         padding: { x: 0, y: 0 },
         origin: { x: 0, y: 0 },
         behavior: 'contain',
@@ -196,6 +277,9 @@ export function HandwrittenNoteEditor({
       editor.setCamera({ x: 0, y: 0, zoom: 1 })
     } catch {}
   }, [editor])
+
+  // 4) Можно где-то использовать normalEditorParams / windowParams
+  //    например, чтобы рассчитать зум и т.д.
 
   useEffect(() => {
     if (!editor) return
