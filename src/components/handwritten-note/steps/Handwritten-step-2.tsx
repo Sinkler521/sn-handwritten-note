@@ -127,6 +127,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
           assetLink={assetLink}
           currentEditorOptions={currentEditorOptions}
           setCurrentEditorOptions={setCurrentEditorOptions}
+          updateBlockProperty={updateBlockProperty}
         />
       </div>
     </>
