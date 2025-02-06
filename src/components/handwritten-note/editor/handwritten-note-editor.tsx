@@ -31,12 +31,14 @@ interface HandwrittenNoteEditorProps {
   updateBlockProperty: (key: string, value: any) => void
   currentEditorOptions: EditorOptions
   setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void
+  isFullScreen: boolean
 }
 
 export function HandwrittenNoteEditor({
   assetLink,
   currentEditorOptions,
-  setCurrentEditorOptions
+  setCurrentEditorOptions,
+  isFullScreen
 }: HandwrittenNoteEditorProps) {
 
   const windowParams = {
@@ -46,8 +48,9 @@ export function HandwrittenNoteEditor({
   const [normalEditorParams, setNormalEditorParams] = useState<{ width: number; height: number } | null>(null)
   const [editor, setEditor] = useState<Editor | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  const [minEditorZoom, setMinEditorZoom] = useState(1)
 
-  // Используем реф для хранения последних значений currentEditorOptions
   const currentEditorOptionsRef = useRef(currentEditorOptions)
   useEffect(() => {
     currentEditorOptionsRef.current = currentEditorOptions
@@ -109,7 +112,8 @@ export function HandwrittenNoteEditor({
         const deltaH = (height - normalHeight) / (maxHeight - normalHeight);
         ratioH = minZoom + deltaH * (maxZoom - minZoom);
       }
-      let targetZoom = Math.max(ratioW, ratioH);
+
+      let targetZoom = Math.max(ratioW, ratioH, minEditorZoom);
       const diff = Math.abs(targetZoom - currentZoom);
       if (diff < 0.01) return;
       if (timer) clearTimeout(timer);
@@ -125,7 +129,7 @@ export function HandwrittenNoteEditor({
       if (timer) clearTimeout(timer);
       stop();
     };
-  }, [editor, normalEditorParams]);
+  }, [editor, normalEditorParams, minEditorZoom])
 
   useEffect(() => {
     if (!editor || !containerRef.current) return
@@ -289,7 +293,6 @@ export function HandwrittenNoteEditor({
           assets: usedAssets,
           shapes,
         };
-        /* Changed debounce logic to reduce performance issues */
         setCurrentEditorOptions(prev => {
           if (svgStr !== prev.imageData) {
             return { ...prev, editorData: newData, imageData: svgStr };
@@ -315,6 +318,18 @@ export function HandwrittenNoteEditor({
       removeLockAspect()
     }
   }, [editor])
+
+  useEffect(() => {
+    if (!editor) return;
+    if (isFullScreen) {
+      setMinEditorZoom(2.75);
+      setTimeout(() => {
+        editor.setCamera({ x: 0, y: 0, z: 2.75 });
+      }, 0);
+    } else {
+      setMinEditorZoom(1);
+    }
+  }, [editor, isFullScreen])
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
