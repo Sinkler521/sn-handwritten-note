@@ -18,10 +18,8 @@ interface HandwrittenStepCreateNoteProps {
   setMouseOffset: Dispatch<SetStateAction<{ x: number; y: number }>>;
   isFullScreen: boolean;
   toggleIsFullScreen: () => void;
-
   containerStyle: React.CSSProperties;
   windowCoordinates: { x: number; y: number };
-
   noteType: HandwrittenNoteType | undefined;
   updateBlockProperty: (key: string, value: any) => void;
   currentEditorOptions: EditorOptions;
@@ -41,7 +39,6 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
     setMouseOffset,
     isFullScreen,
     toggleIsFullScreen,
-    containerStyle,
     windowCoordinates,
     noteType,
     updateBlockProperty,
@@ -51,7 +48,6 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
   } = props
 
   const [assetLink, setAssetLink] = useState<string | undefined>()
-
   const [boxWidth, setBoxWidth] = useState<number>(600)
   const [boxHeight, setBoxHeight] = useState<number>(400)
 
@@ -121,13 +117,13 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
           <MdClose size={24} />
         </button>
       </div>
-
       <div className="flex-1 overflow-auto">
         <HandwrittenNoteEditor
           assetLink={assetLink}
           currentEditorOptions={currentEditorOptions}
           setCurrentEditorOptions={setCurrentEditorOptions}
           updateBlockProperty={updateBlockProperty}
+          isFullScreen={isFullScreen}
         />
       </div>
     </>
@@ -142,7 +138,7 @@ export const HandwrittenStepCreateNote = (props: HandwrittenStepCreateNoteProps)
   const fullScreenWindow = (
     <div
       className="absolute inset-0 flex flex-col bg-white"
-      style={{ zIndex:99999 }}
+      style={{ zIndex: 99999 }}
       onClick={(e) => e.stopPropagation()}
       ref={windowRef}
     >

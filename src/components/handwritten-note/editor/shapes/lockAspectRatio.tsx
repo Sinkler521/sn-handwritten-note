@@ -1,6 +1,6 @@
 import { Editor } from 'tldraw'
 
-export function lockImageAspectRatio(editor: Editor) {
+export const lockImageAspectRatio = (editor: Editor) => {
   const removeHandler = editor.sideEffects.registerBeforeChangeHandler('shape', (prev, next) => {
     if (next.type !== 'image') return next
 
