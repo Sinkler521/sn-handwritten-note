@@ -32,11 +32,14 @@ interface HandwrittenNoteEditorProps {
   currentEditorOptions: EditorOptions
   setCurrentEditorOptions: (newEditorOptions: EditorOptions) => void
   isFullScreen: boolean
+  isFullScreen: boolean
 }
 
 export function HandwrittenNoteEditor({
   assetLink,
   currentEditorOptions,
+  setCurrentEditorOptions,
+  isFullScreen,
   setCurrentEditorOptions,
   isFullScreen
 }: HandwrittenNoteEditorProps) {
@@ -48,6 +51,9 @@ export function HandwrittenNoteEditor({
   const [normalEditorParams, setNormalEditorParams] = useState<{ width: number; height: number } | null>(null)
   const [editor, setEditor] = useState<Editor | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  const [minEditorZoom, setMinEditorZoom] = useState(1)
+
   
   const [minEditorZoom, setMinEditorZoom] = useState(1)
 
@@ -129,6 +135,7 @@ export function HandwrittenNoteEditor({
       if (timer) clearTimeout(timer);
       stop();
     };
+  }, [editor, normalEditorParams, minEditorZoom])
   }, [editor, normalEditorParams, minEditorZoom])
 
   useEffect(() => {
@@ -318,6 +325,18 @@ export function HandwrittenNoteEditor({
       removeLockAspect()
     }
   }, [editor])
+
+  useEffect(() => {
+    if (!editor) return;
+    if (isFullScreen) {
+      setMinEditorZoom(2.75);
+      setTimeout(() => {
+        editor.setCamera({ x: 0, y: 0, z: 2.75 });
+      }, 0);
+    } else {
+      setMinEditorZoom(1);
+    }
+  }, [editor, isFullScreen])
 
   useEffect(() => {
     if (!editor) return;
